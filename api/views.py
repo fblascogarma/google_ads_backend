@@ -1,7 +1,7 @@
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import render
 from .models import Article, AdWordsCredentials, RefreshToken
-from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer
+from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, CustomerIDSerializer
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -12,6 +12,7 @@ from rest_framework import serializers, status
 
 from .authenticate import connect, get_token
 from .list_accessible_accounts import list_accounts
+from .get_campaigns import campaign_info
 
 
 # Create your views here.
@@ -140,3 +141,26 @@ def search_token(request):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
+# Get info of the campaigns associated with the customer_id from the request
+@api_view(['POST'])
+def get_campaigns(request):
+    if request.method == 'POST':
+        serializer = CustomerIDSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            # get the refresh token
+            refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # call the function to get the campaigns
+            get_campaign_info = campaign_info(refresh_token, customer_id)
+            print(get_campaign_info)
+
+            # response = HttpResponse(list_of_accounts)
+            response = JsonResponse(get_campaign_info, safe=False)
+           
+            return response
+        return Response(data="bad request")

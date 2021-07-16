@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken
+from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID
 
 # Register your models here.
 @admin.register(Article)
@@ -28,3 +28,8 @@ class RefreshTokenModel(admin.ModelAdmin):
 class MyTokenModel(admin.ModelAdmin):
     list_filter = ['mytoken']          # add your filters
     list_display = ['mytoken']
+
+@admin.register(CustomerID)
+class CustomerIDModel(admin.ModelAdmin):
+    list_filter = ('refreshToken', 'customer_id')          # add your filters
+    list_display = ('refreshToken', 'customer_id')

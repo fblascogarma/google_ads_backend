@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken
+from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
 
@@ -47,3 +47,9 @@ class MyTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyToken
         fields = ['id', 'mytoken']
+
+# Serializer for customer_id
+class CustomerIDSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerID
+        fields = ['refreshToken', 'customer_id']

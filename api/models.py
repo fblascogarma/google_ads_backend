@@ -41,3 +41,11 @@ class MyToken(models.Model):
 
     def __str__(self): 
         return self.mytoken
+
+# Model to serializer refresh token and customer id
+class CustomerID(models.Model):                   
+    refreshToken = models.CharField(max_length=500)
+    customer_id = models.CharField(max_length=500)
+
+    def __str__(self): 
+        return self.refreshToken, self.customer_id
