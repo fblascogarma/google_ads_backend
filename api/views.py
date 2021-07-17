@@ -131,7 +131,9 @@ def search_token(request):
                 
                 query_set = RefreshToken.objects.filter(mytoken=mytoken)
                 # get the last one which is the most recent one
-                query_set = query_set.values()[0]
+                most_recent = len(query_set) - 1
+                print(most_recent)
+                query_set = query_set.values()[most_recent]
         
                 refresh_token = query_set['refreshToken']
             

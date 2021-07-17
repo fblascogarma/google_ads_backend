@@ -22,7 +22,15 @@ I’ll use Django (Python framework) for the backend, React (JavaScript framewor
 
 Also, I will use environment variables for privacy concerns and ignore the client_secret.json file from my Google Cloud Platform project.
 
-# Steps (WIP)
+# Structure of project
+
+In the main directory, there are two important folders called api and backend, plus the README.md file and the manage.py file. The manage.py file is to use it in the command line (if you are not familiar with Django, read about it). 
+
+The backend folder has the settings.py file of the backend app, and the api folder has the files of the api I built for the project, which also includes the files to make API calls to Google Ads.
+
+There are two files that are ignored so you will not see them here, but I have them in my local machine. One  is client_secret.json that contains the secret keys of my Google Cloud Platform project. The other one is the db.sqlite3 which is the database file that contains information of my models.
+
+# Steps (WIP - This project isn't finished yet)
 
 I will complete this later.
 
