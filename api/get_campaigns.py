@@ -29,7 +29,7 @@ def campaign_info(refresh_token, customer_id):
         SELECT 
             campaign.id, 
             campaign.name, 
-            campaign.campaign_budget, 
+            campaign_budget.amount_micros, 
             campaign.status, 
             campaign.start_date, 
             campaign.advertising_channel_sub_type, 
@@ -130,24 +130,22 @@ def campaign_info(refresh_token, customer_id):
             if row.metrics.interactions == 0:
                 conv_rate = 0
             else:
-                conv_rate = round((row.metrics.all_conversions/row.metrics.interactions), 2)
+                conv_rate = round(((row.metrics.all_conversions/row.metrics.interactions))*100, 2)
 
             
             data = {}
             data["campaign_id"] = row.campaign.id
             data["campaign_name"] = row.campaign.name
-            # data["campaign_budget"] = (row.campaign_budget.amount_micros)/1000000
-            data["campaign_budget"] = row.campaign_budget.amount_micros
+            data["campaign_budget"] = round((row.campaign_budget.amount_micros/1000000), 2)
             data["start_date"] = row.campaign.start_date
             data["status"] = campaign_status
             data["campaign_type"] = campaign_type
             data["impressions"] = row.metrics.impressions
-            # data["segments"] = row.segments.device
             data["cpc"] = round((row.metrics.average_cpc/1000000),2)
             data["cpm"] = round((row.metrics.average_cpm/1000000),2)
             data["clicks"] = row.metrics.clicks
             data["interactions"] = row.metrics.interactions
-            data["interaction_rate"] = round(row.metrics.interaction_rate, 2)
+            data["interaction_rate"] = round((row.metrics.interaction_rate)*100, 2)
             data["ctr"] = round(row.metrics.ctr, 2)
             data["conv"] = round(row.metrics.all_conversions, 0)
             data["conv_value"] = round(row.metrics.all_conversions_value, 0)
