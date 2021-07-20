@@ -1,7 +1,7 @@
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import render
 from .models import Article, AdWordsCredentials, RefreshToken
-from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, CustomerIDSerializer
+from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -147,7 +147,7 @@ def search_token(request):
 @api_view(['POST'])
 def get_campaigns(request):
     if request.method == 'POST':
-        serializer = CustomerIDSerializer(data=request.data)
+        serializer = ReportingSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             # get the refresh token
@@ -157,8 +157,12 @@ def get_campaigns(request):
             customer_id = serializer['customer_id'].value
             customer_id = str(customer_id)
 
+            # get the date range
+            date_range = serializer['date_range'].value
+            print(date_range)
+
             # call the function to get the campaigns
-            get_campaign_info = campaign_info(refresh_token, customer_id)
+            get_campaign_info = campaign_info(refresh_token, customer_id, date_range)
             print(get_campaign_info)
 
             # response = HttpResponse(list_of_accounts)

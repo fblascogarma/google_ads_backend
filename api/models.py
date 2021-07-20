@@ -49,3 +49,12 @@ class CustomerID(models.Model):
 
     def __str__(self): 
         return self.refreshToken, self.customer_id
+
+# Model to serializer frontend data to get info of campaigns
+class Reporting(models.Model):                   
+    refreshToken = models.CharField(max_length=500)
+    customer_id = models.CharField(max_length=500)
+    date_range = models.CharField(max_length=500)
+
+    def __str__(self): 
+        return self.refreshToken, self.customer_id, self.date_range

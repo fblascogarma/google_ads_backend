@@ -5,7 +5,7 @@ import json
 from google.ads.googleads.client import GoogleAdsClient
 # from google.ads.googleads.errors import GoogleAdsException
 
-def campaign_info(refresh_token, customer_id):
+def campaign_info(refresh_token, customer_id, date_range):
 
     # Configurations
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
@@ -25,7 +25,11 @@ def campaign_info(refresh_token, customer_id):
 
     ga_service = googleads_client.get_service("GoogleAdsService")
 
-    query = """
+    # date selected by user on UI
+    date_range = date_range
+
+    if date_range == "ALL_TIME":
+        query = """
         SELECT 
             campaign.id, 
             campaign.name, 
@@ -46,6 +50,27 @@ def campaign_info(refresh_token, customer_id):
             metrics.cost_per_all_conversions
         FROM campaign
         ORDER BY campaign.id"""
+    else: query = ('SELECT campaign.id, campaign.name, '
+            'campaign_budget.amount_micros, '
+            'campaign.status, '
+            'campaign.start_date, '
+            'campaign.advertising_channel_sub_type, '
+            'metrics.average_cpc, '
+            'metrics.average_cpm, '
+            'metrics.clicks, '
+            'metrics.interactions, '
+            'metrics.interaction_rate, '
+            'metrics.impressions, '
+            'metrics.ctr, '
+            'metrics.all_conversions, '
+            'metrics.all_conversions_value, '
+            'metrics.cost_micros, '
+            'metrics.cost_per_all_conversions '
+        'FROM campaign '
+        'WHERE segments.date DURING '+ date_range + ' '
+        'ORDER BY campaign.id')
+
+    
 
     # Issues a search request using streaming.
     response = ga_service.search_stream(customer_id=customer_id, query=query)
