@@ -58,3 +58,13 @@ class Reporting(models.Model):
 
     def __str__(self): 
         return self.refreshToken, self.customer_id, self.date_range
+
+# Model to get keyword themes recommendations
+class KeywordThemesRecommendations(models.Model):                   
+    refreshToken = models.CharField(max_length=500)
+    keyword_text = models.CharField(max_length=500)
+    country_code = models.CharField(max_length=500)
+    language_code = models.CharField(max_length=500)
+
+    def __str__(self): 
+        return self.refreshToken, self.keyword_text, self.country_code, self.language_code

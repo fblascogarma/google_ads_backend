@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting
+from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, KeywordThemesRecommendations
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
 
@@ -59,3 +59,9 @@ class ReportingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reporting
         fields = ['refreshToken', 'customer_id', 'date_range']
+
+# Serializer for keyword themes suggestions
+class KeywordThemesRecommendationsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = KeywordThemesRecommendations
+        fields = ['refreshToken', 'keyword_text', 'country_code', 'language_code']
