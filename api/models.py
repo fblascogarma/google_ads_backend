@@ -68,3 +68,13 @@ class KeywordThemesRecommendations(models.Model):
 
     def __str__(self): 
         return self.refreshToken, self.keyword_text, self.country_code, self.language_code
+
+# Model to get geo location recommendations
+class LocationRecommendations(models.Model):                   
+    refreshToken = models.CharField(max_length=500)
+    language_code = models.CharField(max_length=500)
+    country_code = models.CharField(max_length=500)
+    location = models.CharField(max_length=500)
+
+    def __str__(self): 
+        return self.refreshToken, self.location, self.country_code, self.language_code

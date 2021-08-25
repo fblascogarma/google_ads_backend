@@ -90,7 +90,7 @@ def campaign_info(refresh_token, customer_id, date_range):
                         campaign_status = "Unknown"
                     else:
                         if row.campaign.status == 2:
-                            campaign_status = "Enabled"
+                            campaign_status = "Active"
                         else:
                             if row.campaign.status == 3:
                                 campaign_status = "Paused"

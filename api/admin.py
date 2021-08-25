@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, KeywordThemesRecommendations
+from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, KeywordThemesRecommendations, LocationRecommendations
 
 # Register your models here.
 @admin.register(Article)
@@ -43,3 +43,8 @@ class ReportingModel(admin.ModelAdmin):
 class KeywordThemesRecommendationsModel(admin.ModelAdmin):
     list_filter = ('refreshToken', 'keyword_text', 'country_code', 'language_code')          # add your filters
     list_display = ('refreshToken', 'keyword_text', 'country_code', 'language_code')
+
+@admin.register(LocationRecommendations)
+class LocationRecommendationsModel(admin.ModelAdmin):
+    list_filter = ('refreshToken', 'location', 'country_code', 'language_code')          # add your filters
+    list_display = ('refreshToken', 'location', 'country_code', 'language_code')

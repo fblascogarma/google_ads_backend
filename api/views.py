@@ -1,7 +1,7 @@
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import render
 from .models import Article, AdWordsCredentials, RefreshToken
-from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, KeywordThemesRecommendationsSerializer
+from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, KeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -14,6 +14,7 @@ from .authenticate import connect, get_token
 from .list_accessible_accounts import list_accounts
 from .get_campaigns import campaign_info
 from .create_smart_campaign import get_keyword_themes_suggestions
+from .geo_location import get_geo_location_recommendations
 
 
 # Create your views here.
@@ -195,7 +196,33 @@ def get_keyword_themes_recommendations(request):
             # call the function to get the recommendations
             get_recommendations = get_keyword_themes_suggestions(refresh_token, keyword_text, country_code, language_code)
 
-            # response = HttpResponse(list_of_accounts)
+            response = JsonResponse(get_recommendations, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Get location recommendations
+@api_view(['POST'])
+def get_location_recommendations(request):
+    if request.method == 'POST':
+        serializer = LocationRecommendationsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            # get the refresh token
+            refresh_token = serializer['refreshToken'].value
+
+            # get the location
+            location = serializer['location'].value
+
+            # get the country code
+            country_code = serializer['country_code'].value
+
+            # get the language code
+            language_code = serializer['language_code'].value
+
+            # call the function to get the recommendations
+            get_recommendations = get_geo_location_recommendations(refresh_token, location, country_code, language_code)
+
             response = JsonResponse(get_recommendations, safe=False)
            
             return response

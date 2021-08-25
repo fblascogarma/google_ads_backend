@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.urls import path, include
-from .views import ArticleViewSet, UserViewSet, AdWordsCredentialsViewSet, authenticate, callback, list_ads_accounts, search_token, get_campaigns, get_keyword_themes_recommendations
+from .views import ArticleViewSet, UserViewSet, AdWordsCredentialsViewSet, authenticate, callback, list_ads_accounts, search_token, get_campaigns, get_keyword_themes_recommendations, get_location_recommendations
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -17,4 +17,5 @@ urlpatterns = [
     path('api/lookup-refreshtoken/', search_token),
     path('api/get-campaigns/', get_campaigns),
     path('api/keywords-recommendations/', get_keyword_themes_recommendations),
+    path('api/location-recommendations/', get_location_recommendations),
 ]
