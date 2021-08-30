@@ -78,3 +78,14 @@ class LocationRecommendations(models.Model):
 
     def __str__(self): 
         return self.refreshToken, self.location, self.country_code, self.language_code
+
+# Model to create Google Ads account
+class GoogleAdsAccountCreation(models.Model):                   
+    refreshToken = models.CharField(max_length=500)
+    account_name = models.CharField(max_length=500)
+    currency = models.CharField(max_length=10)
+    time_zone = models.CharField(max_length=100)
+    email_address = models.CharField(max_length=500)
+
+    def __str__(self): 
+        return self.refreshToken, self.time_zone, self.currency, self.account_name, self.email_address

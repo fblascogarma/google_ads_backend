@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, KeywordThemesRecommendations, LocationRecommendations
+from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
 
@@ -71,3 +71,9 @@ class LocationRecommendationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = LocationRecommendations
         fields = ['refreshToken', 'location', 'country_code', 'language_code']
+
+# Serializer for Google Ads account creation
+class GoogleAdsAccountCreationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GoogleAdsAccountCreation
+        fields = ['refreshToken', 'account_name', 'currency', 'time_zone', 'email_address']

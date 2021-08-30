@@ -1,7 +1,7 @@
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import render
 from .models import Article, AdWordsCredentials, RefreshToken
-from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, KeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer
+from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, KeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer, GoogleAdsAccountCreationSerializer
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -13,8 +13,9 @@ from rest_framework import serializers, status
 from .authenticate import connect, get_token
 from .list_accessible_accounts import list_accounts
 from .get_campaigns import campaign_info
-from .create_smart_campaign import get_keyword_themes_suggestions
+from .keyword_themes import get_keyword_themes_suggestions
 from .geo_location import get_geo_location_recommendations
+from .create_customer import create_client_customer
 
 
 # Create your views here.
@@ -226,4 +227,37 @@ def get_location_recommendations(request):
             response = JsonResponse(get_recommendations, safe=False)
            
             return response
+        return Response(data="bad request")
+
+# Create Google Ads account
+@api_view(['POST'])
+def create_google_ads_account(request):
+    if request.method == 'POST':
+        serializer = GoogleAdsAccountCreationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            # get the refresh token
+            refresh_token = serializer['refreshToken'].value
+
+            # get the account_name
+            account_name = serializer['account_name'].value
+
+            # get the currency
+            currency = serializer['currency'].value
+
+            # get the time_zone
+            time_zone = serializer['time_zone'].value
+
+            # get the email_address
+            email_address = serializer['email_address'].value
+
+            # call the function to create account
+            customer_id = create_client_customer(refresh_token, account_name, currency, time_zone, email_address)
+
+            response = JsonResponse(customer_id, safe=False)
+           
+            return response
+        
+        else:
+            print(serializer.errors)
         return Response(data="bad request")
