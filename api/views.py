@@ -1,7 +1,7 @@
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import render
-from .models import Article, AdWordsCredentials, RefreshToken
-from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, KeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer, GoogleAdsAccountCreationSerializer
+from .models import Article, AdWordsCredentials, RefreshToken, NewAccountCustomerID
+from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, KeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer, GoogleAdsAccountCreationSerializer, NewAccountCustomerIDSerializer
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import serializers, status
+import os
 
 from .authenticate import connect, get_token
 from .list_accessible_accounts import list_accounts
@@ -144,6 +145,30 @@ def search_token(request):
                 response = HttpResponse(refresh_token)
                 return response
 
+            # check if user has a customer_id from Google Ads
+            # and send it to the frontend
+            finally:
+                try:
+                    customer_id = NewAccountCustomerID.objects.get(mytoken=mytoken)
+
+                    response2 = HttpResponse(customer_id)
+                    return response2
+
+                except NewAccountCustomerID.MultipleObjectsReturned:
+
+                    query_set2 = NewAccountCustomerID.objects.filter(mytoken=mytoken)
+                    most_recent2 = len(query_set2) - 1
+                    query_set2 = query_set2.values()[most_recent2]
+
+                    customer_id = query_set['customer_id']
+
+                    response2 = HttpResponse(customer_id)
+                    return response2
+
+                except NewAccountCustomerID.DoesNotExist:
+                    response2 = []
+                    print(response2)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 # Get info of the campaigns associated with the customer_id from the request
@@ -153,8 +178,21 @@ def get_campaigns(request):
         serializer = ReportingSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            # get the refresh token
-            refresh_token = serializer['refreshToken'].value
+
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # if there is a refresh token, it means an existing user wants
+            # to create a new account and we should let them
+            else: 
+                refresh_token = serializer['refreshToken'].value
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -166,9 +204,8 @@ def get_campaigns(request):
 
             # call the function to get the campaigns
             get_campaign_info = campaign_info(refresh_token, customer_id, date_range)
-            # print(get_campaign_info)
+            print(get_campaign_info)
 
-            # response = HttpResponse(list_of_accounts)
             response = JsonResponse(get_campaign_info, safe=False)
            
             return response
@@ -236,8 +273,20 @@ def create_google_ads_account(request):
         serializer = GoogleAdsAccountCreationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            # get the refresh token
-            refresh_token = serializer['refreshToken'].value
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            so we can create an account on their behalf
+            using our refresh token
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+                mytoken = serializer['mytoken'].value
+            # if there is a refresh token, it means an existing user wants
+            # to create a new account and we should let them
+            else: refresh_token = serializer['refreshToken'].value
 
             # get the account_name
             account_name = serializer['account_name'].value
@@ -252,7 +301,23 @@ def create_google_ads_account(request):
             email_address = serializer['email_address'].value
 
             # call the function to create account
-            customer_id = create_client_customer(refresh_token, account_name, currency, time_zone, email_address)
+            customer_id = create_client_customer(
+                refresh_token, 
+                account_name, 
+                currency, 
+                time_zone, 
+                email_address)
+
+            # store the customer id created and the mytoken value for future reference
+            if serializer['refreshToken'].value == '':
+                cust_id_data = {
+                    'mytoken': mytoken,
+                    'customer_id': customer_id
+                }
+                serializer2 = NewAccountCustomerIDSerializer(data=cust_id_data)
+                if serializer2.is_valid():
+                    serializer2.save()
+
 
             response = JsonResponse(customer_id, safe=False)
            

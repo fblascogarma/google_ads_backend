@@ -99,6 +99,8 @@ def campaign_info(refresh_token, customer_id, date_range):
                                     campaign_status = "Removed"
 
                 # get campaign type name
+                # see this link for reference 
+                # https://developers.google.com/google-ads/api/reference/rpc/v8/AdvertisingChannelSubTypeEnum.AdvertisingChannelSubType
                 if row.campaign.advertising_channel_sub_type == 0:
                     campaign_type = "Unspecified"
                 else:

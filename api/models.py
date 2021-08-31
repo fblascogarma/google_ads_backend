@@ -52,7 +52,8 @@ class CustomerID(models.Model):
 
 # Model to serializer frontend data to get info of campaigns
 class Reporting(models.Model):                   
-    refreshToken = models.CharField(max_length=500)
+    # we make the refreshToken optional in case user created account via Fran Ads
+    refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     date_range = models.CharField(max_length=500)
 
@@ -80,12 +81,25 @@ class LocationRecommendations(models.Model):
         return self.refreshToken, self.location, self.country_code, self.language_code
 
 # Model to create Google Ads account
-class GoogleAdsAccountCreation(models.Model):                   
-    refreshToken = models.CharField(max_length=500)
+class GoogleAdsAccountCreation(models.Model):  
+    '''make the refresh token optional so if there is no value
+    it means we are going to use the app's refresh token because
+    user hasn't authenticated with an existing Google Ads account'''                 
+    refreshToken = models.CharField(max_length=500, blank=True)
+    mytoken = models.CharField(max_length=500, blank=True)
     account_name = models.CharField(max_length=500)
     currency = models.CharField(max_length=10)
     time_zone = models.CharField(max_length=100)
     email_address = models.CharField(max_length=500)
 
     def __str__(self): 
-        return self.refreshToken, self.time_zone, self.currency, self.account_name, self.email_address
+        return self.refreshToken, self.mytoken, self.time_zone, self.currency, self.account_name, self.email_address
+
+# Model for the customer id of the newly created Google Ads account
+# for users who had zero accounts created before
+class NewAccountCustomerID(models.Model):                   
+    mytoken = models.CharField(max_length=500)
+    customer_id = models.CharField(max_length=500)
+
+    def __str__(self): 
+        return self.customer_id
