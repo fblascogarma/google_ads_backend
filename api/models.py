@@ -35,14 +35,14 @@ class RefreshToken(models.Model):
     def __str__(self): 
         return self.refreshToken
 
-# Model to serializer mytoken
+# Model to serialize mytoken
 class MyToken(models.Model):                   
     mytoken = models.CharField(max_length=500)
 
     def __str__(self): 
         return self.mytoken
 
-# Model to serializer refresh token and customer id
+# Model to serialize refresh token and customer id
 class CustomerID(models.Model):                   
     refreshToken = models.CharField(max_length=500)
     customer_id = models.CharField(max_length=500)
@@ -50,7 +50,7 @@ class CustomerID(models.Model):
     def __str__(self): 
         return self.refreshToken, self.customer_id
 
-# Model to serializer frontend data to get info of campaigns
+# Model to serialize frontend data to get info of campaigns
 class Reporting(models.Model):                   
     # we make the refreshToken optional in case user created account via Fran Ads
     refreshToken = models.CharField(max_length=500, blank=True)
@@ -61,8 +61,8 @@ class Reporting(models.Model):
         return self.refreshToken, self.customer_id, self.date_range
 
 # Model to get keyword themes recommendations
-class KeywordThemesRecommendations(models.Model):                   
-    refreshToken = models.CharField(max_length=500)
+class GetKeywordThemesRecommendations(models.Model):                   
+    refreshToken = models.CharField(max_length=500, blank=True)
     keyword_text = models.CharField(max_length=500)
     country_code = models.CharField(max_length=500)
     language_code = models.CharField(max_length=500)
@@ -70,9 +70,17 @@ class KeywordThemesRecommendations(models.Model):
     def __str__(self): 
         return self.refreshToken, self.keyword_text, self.country_code, self.language_code
 
+# Model to store the keyword themes recommendations
+class KeywordThemesRecommendations(models.Model):                   
+    resource_name = models.CharField(max_length=500)
+    display_name = models.CharField(max_length=500)
+
+    def __str__(self): 
+        return self.resource_name
+
 # Model to get geo location recommendations
 class LocationRecommendations(models.Model):                   
-    refreshToken = models.CharField(max_length=500)
+    refreshToken = models.CharField(max_length=500, blank=True)
     language_code = models.CharField(max_length=500)
     country_code = models.CharField(max_length=500)
     location = models.CharField(max_length=500)

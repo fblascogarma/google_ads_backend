@@ -4,7 +4,6 @@ import json
 
 from google.ads.googleads.client import GoogleAdsClient
 
-refresh_token = '1//06p0agHdIYOviCgYIARAAGAYSNwF-L9Ir39B3AqLvuVUU4p1oUhDqiM_ikxYW0tCVBsqih7xew8DVmSgBtu_WfzItBaPyl5tNDjI'
 language_code = 'es'
 country_code = 'AR'
 geo_target_location = ['1000073', '9041027'] # buenos aires and martinez geo target constants
@@ -18,11 +17,12 @@ GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
 GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
 
 # Configure using dict (the refresh token will be a dynamic value)
 credentials = {
 "developer_token": GOOGLE_DEVELOPER_TOKEN,
-"refresh_token": refresh_token,
+"refresh_token": GOOGLE_REFRESH_TOKEN,
 "client_id": GOOGLE_CLIENT_ID,
 "client_secret": GOOGLE_CLIENT_SECRET,
 "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID}
@@ -172,6 +172,9 @@ print(infos)
 
 # print(recommendation.daily_amount_micros)
 # [END add_smart_campaign_1]
+
+
+
 
 # # start of geo location recommendation
 

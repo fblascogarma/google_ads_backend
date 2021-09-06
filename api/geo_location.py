@@ -5,10 +5,6 @@ import json
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
 
-# refresh_token = '1//06mVOJo1Fv533CgYIARAAGAYSNwF-L9Ir7JAGoG96Ma1p02o8CLRBQBJ0MuGeAnJhsApJPE8grDmyKqenhdVsEoJTnAW_4jASX7A'
-# language_code = 'es'
-# country_code = 'AR'
-# location = ['buenos aires', 'martinez']
 
 def get_geo_location_recommendations(refresh_token, language_code, country_code, location):
 

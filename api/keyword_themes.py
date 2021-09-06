@@ -5,6 +5,9 @@ import json
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
 
+from .models import KeywordThemesRecommendations
+from .serializers import KeywordThemesRecommendationsSerializer
+
 def get_keyword_themes_suggestions(refresh_token, keyword_text, country_code, language_code):
 
     try:
@@ -46,19 +49,32 @@ def get_keyword_themes_suggestions(refresh_token, keyword_text, country_code, la
         )
     
         keyword_theme_constants = response.keyword_theme_constants
+        print('keyword_theme_constants:')
+        print(keyword_theme_constants)
 
-        data = []
+        recommendations = []
         for i in keyword_theme_constants:
 
-            test_keyword_theme_sugg = i.display_name
-            data.append(test_keyword_theme_sugg)
-            
-        print("print data type: ", type(data))
-        print("print data: ", data)
+            display_name = i.display_name
+            # send only the display_name to the frontend
+            recommendations.append(display_name)
+            resource_name = i.resource_name
+            # save display_name and resource_name in model
+            data_model = {}
+            data_model["resource_name"] = resource_name
+            data_model["display_name"] = display_name
+            serializer = KeywordThemesRecommendationsSerializer(data=data_model)
+            if serializer.is_valid():
+                # save it only if it is new data
+                try:
+                    KeywordThemesRecommendations.objects.get(display_name=display_name)
+                    print('data already exists in model')
+                except KeywordThemesRecommendations.DoesNotExist:
+                    serializer.save()
 
-        json.dumps(data)
+        json.dumps(recommendations)
 
-        return data
+        return recommendations
     
     except GoogleAdsException as ex:
         print(

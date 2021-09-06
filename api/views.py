@@ -1,7 +1,7 @@
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import render
 from .models import Article, AdWordsCredentials, RefreshToken, NewAccountCustomerID
-from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, KeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer, GoogleAdsAccountCreationSerializer, NewAccountCustomerIDSerializer
+from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, GetKeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer, GoogleAdsAccountCreationSerializer, NewAccountCustomerIDSerializer
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -145,6 +145,7 @@ def search_token(request):
                 response = HttpResponse(refresh_token)
                 return response
 
+            # if user has no refresh token,
             # check if user has a customer_id from Google Ads
             # and send it to the frontend
             finally:
@@ -216,11 +217,24 @@ def get_campaigns(request):
 @api_view(['POST'])
 def get_keyword_themes_recommendations(request):
     if request.method == 'POST':
-        serializer = KeywordThemesRecommendationsSerializer(data=request.data)
+        serializer = GetKeywordThemesRecommendationsSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            # get the refresh token
-            refresh_token = serializer['refreshToken'].value
+            
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # if there is a refresh token, it means an existing user wants
+            # to create a new account and we should let them
+            else: 
+                refresh_token = serializer['refreshToken'].value
 
             # get the keyword text
             keyword_text = serializer['keyword_text'].value
@@ -233,7 +247,8 @@ def get_keyword_themes_recommendations(request):
 
             # call the function to get the recommendations
             get_recommendations = get_keyword_themes_suggestions(refresh_token, keyword_text, country_code, language_code)
-
+            print(get_recommendations)
+            
             response = JsonResponse(get_recommendations, safe=False)
            
             return response
@@ -246,8 +261,20 @@ def get_location_recommendations(request):
         serializer = LocationRecommendationsSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            # get the refresh token
-            refresh_token = serializer['refreshToken'].value
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # if there is a refresh token, it means an existing user wants
+            # to create a new account and we should let them
+            else: 
+                refresh_token = serializer['refreshToken'].value
 
             # get the location
             location = serializer['location'].value
