@@ -111,3 +111,17 @@ class NewAccountCustomerID(models.Model):
 
     def __str__(self): 
         return self.customer_id
+
+# Model to get budget recommendations
+class GetBudgetRecommendations(models.Model):                   
+    refreshToken = models.CharField(max_length=500, blank=True)
+    customer_id = models.CharField(max_length=500)
+    display_name = models.TextField()
+    language_code = models.CharField(max_length=500)
+    country_code = models.CharField(max_length=500)
+    landing_page = models.CharField(max_length=500)
+    geo_target_names = models.TextField()
+
+
+    def __str__(self): 
+        return self.refreshToken, self.customer_id, self.display_name, self.language_code, self.country_code, self.landing_page, self.geo_target_names

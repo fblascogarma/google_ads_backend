@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, GetKeywordThemesRecommendations, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation, NewAccountCustomerID
+from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, GetKeywordThemesRecommendations, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation, NewAccountCustomerID, GetBudgetRecommendations
 
 # Register your models here.
 @admin.register(Article)
@@ -63,3 +63,8 @@ class GoogleAdsAccountCreationModel(admin.ModelAdmin):
 class NewAccountCustomerIDModel(admin.ModelAdmin):
     list_filter = ('mytoken', 'customer_id')          # add your filters
     list_display = ('mytoken', 'customer_id')
+
+@admin.register(GetBudgetRecommendations)
+class GetBudgetRecommendationsModel(admin.ModelAdmin):
+    list_filter = ('refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names')          # add your filters
+    list_display = ('refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names')

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, GetKeywordThemesRecommendations, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation, NewAccountCustomerID
+from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, GetKeywordThemesRecommendations, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation, NewAccountCustomerID, GetBudgetRecommendations
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
 
@@ -89,3 +89,9 @@ class NewAccountCustomerIDSerializer(serializers.ModelSerializer):
     class Meta:
         model = NewAccountCustomerID
         fields = ['mytoken', 'customer_id']
+
+# Serializer to get budget recommendations
+class GetBudgetRecommendationsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GetBudgetRecommendations
+        fields = ['refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names']

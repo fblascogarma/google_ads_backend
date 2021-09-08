@@ -1,7 +1,8 @@
+from json.decoder import JSONDecoder
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import render
 from .models import Article, AdWordsCredentials, RefreshToken, NewAccountCustomerID
-from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, GetKeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer, GoogleAdsAccountCreationSerializer, NewAccountCustomerIDSerializer
+from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, GetKeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer, GoogleAdsAccountCreationSerializer, NewAccountCustomerIDSerializer, GetBudgetRecommendationsSerializer
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -17,6 +18,7 @@ from .get_campaigns import campaign_info
 from .keyword_themes import get_keyword_themes_suggestions
 from .geo_location import get_geo_location_recommendations
 from .create_customer import create_client_customer
+from .budget import get_budget_recommendation
 
 
 # Create your views here.
@@ -352,4 +354,61 @@ def create_google_ads_account(request):
         
         else:
             print(serializer.errors)
+        return Response(data="bad request")
+
+# Get budget recommendations
+@api_view(['POST'])
+def get_budget(request):
+    if request.method == 'POST':
+        serializer = GetBudgetRecommendationsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # if there is a refresh token, it means an existing user wants
+            # to create a new account and we should let them
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+
+            # get the display_name
+            display_name = serializer['display_name'].value
+            # transform string into a list
+            display_name = display_name.replace('"','').replace('[','').replace(']','').split(",")
+
+            # get the geo_target_names
+            geo_target_names = serializer['geo_target_names'].value
+            # transform string into a list
+            geo_target_names = geo_target_names.replace('"','').replace('[','').replace(']','').split(",")
+
+            # get the country code
+            country_code = serializer['country_code'].value
+
+            # get the language code
+            language_code = serializer['language_code'].value
+
+            # get the landing_page
+            landing_page = serializer['landing_page'].value
+
+            # call the function to get the recommendations
+            get_recommendations = get_budget_recommendation(
+                refresh_token, customer_id, display_name, 
+                landing_page, geo_target_names, language_code, 
+                country_code)
+            print(get_recommendations)
+            
+            response = JsonResponse(get_recommendations, safe=False)
+           
+            return response
         return Response(data="bad request")
