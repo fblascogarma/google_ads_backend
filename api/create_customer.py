@@ -4,23 +4,6 @@ import sys
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
 
-# These will come from the frontend
-# refresh_token = '1//06p0agHdIYOviCgYIARAAGAYSNwF-L9Ir39B3AqLvuVUU4p1oUhDqiM_ikxYW0tCVBsqih7xew8DVmSgBtu_WfzItBaPyl5tNDjI'
-# account_name = 'testing2'
-# currency = 'USD'
-# time_zone = 'America/New_York'
-# email_address = 'fblascogarma@gmail.com'
-
-# """
-# Possible access role of a user. We are going to give users ADMIN access for the account created for them.
-#         UNSPECIFIED = 0
-#         UNKNOWN = 1
-#         ADMIN = 2
-#         STANDARD = 3
-#         READ_ONLY = 4
-#         EMAIL_ONLY = 5
-# """
-# access_role = 'ADMIN'
 
 def create_client_customer (
     refresh_token, 
@@ -111,14 +94,6 @@ def create_client_customer (
             f"access role ADMIN. The invitation resource name is: "
             f"{response.result.resource_name}"
         )
-
-        # created_account_info = {
-        #     'customer_id': customer_id,
-        #     'email_address': email_address,
-        #     'account_name': account_name,
-        #     'refresh_token': refresh_token
-
-        # }
 
         return customer_id
 

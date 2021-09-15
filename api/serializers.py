@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, GetKeywordThemesRecommendations, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation, NewAccountCustomerID, GetBudgetRecommendations
+from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, GetKeywordThemesRecommendations, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation, NewAccountCustomerID, GetBudgetRecommendations, CreateSmartCampaign
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
 
@@ -95,3 +95,12 @@ class GetBudgetRecommendationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GetBudgetRecommendations
         fields = ['refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names']
+
+# Serializer to create smart campaign
+class CreateSmartCampaignSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CreateSmartCampaign
+        fields = [
+            'refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names', 
+            'selected_budget', 'phone_number', 'business_name', 'headline_1_user', 'headline_2_user', 'headline_3_user',
+            'desc_1_user', 'desc_2_user', 'campaign_name']

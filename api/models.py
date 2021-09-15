@@ -124,4 +124,37 @@ class GetBudgetRecommendations(models.Model):
 
 
     def __str__(self): 
-        return self.refreshToken, self.customer_id, self.display_name, self.language_code, self.country_code, self.landing_page, self.geo_target_names
+        return (
+            self.refreshToken, self.customer_id, self.display_name, 
+            self.language_code, self.country_code, self.landing_page, 
+            self.geo_target_names)
+
+# Model to create smart campaign
+class CreateSmartCampaign(models.Model):                   
+    refreshToken = models.CharField(max_length=500, blank=True)
+    customer_id = models.CharField(max_length=500)
+    display_name = models.TextField()
+    language_code = models.CharField(max_length=500)
+    country_code = models.CharField(max_length=500)
+    landing_page = models.CharField(max_length=500)
+    geo_target_names = models.TextField()
+    selected_budget = models.CharField(max_length=500)
+    phone_number = models.CharField(max_length=500)
+    business_name = models.CharField(max_length=500)
+    headline_1_user = models.CharField(max_length=500)
+    headline_2_user = models.CharField(max_length=500)
+    headline_3_user = models.CharField(max_length=500)
+    desc_1_user = models.CharField(max_length=500)
+    desc_2_user = models.CharField(max_length=500)
+    campaign_name = models.CharField(max_length=500)
+
+
+
+    def __str__(self): 
+        return (
+            self.refreshToken, self.customer_id, self.display_name, 
+            self.language_code, self.country_code, self.landing_page, 
+            self.geo_target_names, self.selected_budget, self.phone_number,
+            self.business_name, self.headline_1_user, self.headline_2_user,
+            self.headline_3_user, self.desc_1_user, self.desc_2_user, 
+            self.campaign_name)

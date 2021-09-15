@@ -53,14 +53,6 @@ def connect():
         approval_prompt='force'
     )
 
-    # Retrieves an authorization code by opening a socket to receive the
-    # redirect request and parsing the query parameters set in the URL.
-    # code = _get_authorization_code(passthrough_val)
-
-    # # Pass the code back into the OAuth module to get a refresh token.
-    # flow.fetch_token(code=code)
-    # refresh_token = flow.credentials.refresh_token
-
     return authorization_url, passthrough_val
 
 

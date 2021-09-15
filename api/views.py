@@ -2,7 +2,7 @@ from json.decoder import JSONDecoder
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import render
 from .models import Article, AdWordsCredentials, RefreshToken, NewAccountCustomerID
-from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, GetKeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer, GoogleAdsAccountCreationSerializer, NewAccountCustomerIDSerializer, GetBudgetRecommendationsSerializer
+from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, GetKeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer, GoogleAdsAccountCreationSerializer, NewAccountCustomerIDSerializer, GetBudgetRecommendationsSerializer, CreateSmartCampaignSerializer
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -19,6 +19,7 @@ from .keyword_themes import get_keyword_themes_suggestions
 from .geo_location import get_geo_location_recommendations
 from .create_customer import create_client_customer
 from .budget import get_budget_recommendation
+from .create_smart_campaign import create_smart
 
 
 # Create your views here.
@@ -82,7 +83,11 @@ def callback(request):
             refresh_token = get_token(google_access_code)
 
             # need to save the refresh token in my AdWordsCredentials model
-            serializer_credentials = AdWordsCredentialsSerializer(data={'mytoken': mytoken, 'google_access_code': google_access_code, 'refresh_token': refresh_token})
+            serializer_credentials = AdWordsCredentialsSerializer(data={
+                'mytoken': mytoken, 
+                'google_access_code': google_access_code, 
+                'refresh_token': refresh_token
+                })
             if serializer_credentials.is_valid():
                 serializer_credentials.save()
 
@@ -409,6 +414,93 @@ def get_budget(request):
             print(get_recommendations)
             
             response = JsonResponse(get_recommendations, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+
+# Create Smart Campaign
+@api_view(['POST'])
+def create_smart_campaign(request):
+    if request.method == 'POST':
+        serializer = CreateSmartCampaignSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # if there is a refresh token, it means an existing user wants
+            # to create a new account and we should let them
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+
+            # get the display_name
+            display_name = serializer['display_name'].value
+            # transform string into a list
+            display_name = display_name.replace('"','').replace('[','').replace(']','').split(",")
+
+            # get the geo_target_names
+            geo_target_names = serializer['geo_target_names'].value
+            # transform string into a list
+            geo_target_names = geo_target_names.replace('"','').replace('[','').replace(']','').split(",")
+
+            # get the country code
+            country_code = serializer['country_code'].value
+
+            # get the language code
+            language_code = serializer['language_code'].value
+
+            # get the landing_page
+            landing_page = serializer['landing_page'].value
+
+            # get the selected_budget
+            selected_budget = serializer['selected_budget'].value
+
+            # get the phone_number
+            phone_number = serializer['phone_number'].value
+
+            # get the business_name
+            business_name = serializer['business_name'].value
+
+            # get the headline_1_user
+            headline_1_user = serializer['headline_1_user'].value
+
+            # get the headline_2_user
+            headline_2_user = serializer['headline_2_user'].value
+
+            # get the headline_3_user
+            headline_3_user = serializer['headline_3_user'].value
+
+            # get the desc_1_user
+            desc_1_user = serializer['desc_1_user'].value
+
+            # get the desc_2_user
+            desc_2_user = serializer['desc_2_user'].value
+
+            # get the campaign_name
+            campaign_name = serializer['campaign_name'].value
+
+            # call the function to get the recommendations
+            smart_campaign = create_smart(
+                refresh_token, customer_id, display_name, geo_target_names,
+                language_code, country_code, selected_budget,
+                phone_number, landing_page, business_name,
+                headline_1_user, headline_2_user, headline_3_user,
+                desc_1_user, desc_2_user, campaign_name)
+            print(smart_campaign)
+            
+            response = JsonResponse(smart_campaign, safe=False)
            
             return response
         return Response(data="bad request")

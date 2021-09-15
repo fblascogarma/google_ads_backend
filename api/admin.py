@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, GetKeywordThemesRecommendations, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation, NewAccountCustomerID, GetBudgetRecommendations
+from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, GetKeywordThemesRecommendations, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation, NewAccountCustomerID, GetBudgetRecommendations, CreateSmartCampaign
 
 # Register your models here.
 @admin.register(Article)
@@ -68,3 +68,14 @@ class NewAccountCustomerIDModel(admin.ModelAdmin):
 class GetBudgetRecommendationsModel(admin.ModelAdmin):
     list_filter = ('refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names')          # add your filters
     list_display = ('refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names')
+
+@admin.register(CreateSmartCampaign)
+class CreateSmartCampaignModel(admin.ModelAdmin):
+    list_filter = (
+        'refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names', 
+        'selected_budget', 'phone_number', 'business_name', 'headline_1_user', 'headline_2_user', 'headline_3_user',
+        'desc_1_user', 'desc_2_user', 'campaign_name')          
+    list_display = (
+        'refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names', 
+        'selected_budget', 'phone_number', 'business_name', 'headline_1_user', 'headline_2_user', 'headline_3_user',
+        'desc_1_user', 'desc_2_user', 'campaign_name')
