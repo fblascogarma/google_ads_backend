@@ -1,0 +1,4 @@
+Django==3.2.4
+django-cors-headers==3.7.0
+djangorestframework==3.12.4
+google-ads==14.0.0

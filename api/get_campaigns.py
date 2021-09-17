@@ -21,7 +21,8 @@ def campaign_info(refresh_token, customer_id, date_range):
         "refresh_token": refresh_token,
         "client_id": GOOGLE_CLIENT_ID,
         "client_secret": GOOGLE_CLIENT_SECRET,
-        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID}
+        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        "use_proto_plus": True}
 
         googleads_client = GoogleAdsClient.load_from_dict(credentials)
 
@@ -37,6 +38,7 @@ def campaign_info(refresh_token, customer_id, date_range):
                 campaign.name, 
                 campaign_budget.amount_micros, 
                 campaign.status, 
+                campaign.serving_status, 
                 campaign.start_date, 
                 campaign.advertising_channel_sub_type, 
                 metrics.average_cpc, 
@@ -55,6 +57,7 @@ def campaign_info(refresh_token, customer_id, date_range):
         else: query = ('SELECT campaign.id, campaign.name, '
                 'campaign_budget.amount_micros, '
                 'campaign.status, '
+                'campaign.serving_status, '
                 'campaign.start_date, '
                 'campaign.advertising_channel_sub_type, '
                 'metrics.average_cpc, '
@@ -83,6 +86,7 @@ def campaign_info(refresh_token, customer_id, date_range):
             for row in batch.results:
 
                 # get campaign status name
+                # https://developers.google.com/google-ads/api/reference/rpc/v8/CampaignStatusEnum.CampaignStatus
                 if row.campaign.status == 0:
                     campaign_status = "Unspecified"
                 else: 
@@ -90,13 +94,36 @@ def campaign_info(refresh_token, customer_id, date_range):
                         campaign_status = "Unknown"
                     else:
                         if row.campaign.status == 2:
-                            campaign_status = "Active"
+                            campaign_status = "Active"      # in Google's documentation they use 'Enabled' but 'Active' is more user-friendly
                         else:
                             if row.campaign.status == 3:
                                 campaign_status = "Paused"
                             else:
                                 if row.campaign.status == 4:
                                     campaign_status = "Removed"
+
+                # get campaign serving status
+                # https://developers.google.com/google-ads/api/reference/rpc/v8/CampaignServingStatusEnum.CampaignServingStatus
+                if row.campaign.serving_status == 0:
+                    campaign_serving_status = "Unspecified"
+                else: 
+                    if row.campaign.serving_status == 1:
+                        campaign_serving_status = "Unknown"
+                    else:
+                        if row.campaign.serving_status == 2:
+                            campaign_serving_status = "Serving"
+                        else:
+                            if row.campaign.serving_status == 3:
+                                campaign_serving_status = "None"
+                            else:
+                                if row.campaign.serving_status == 4:
+                                    campaign_serving_status = "Ended"
+                                else:
+                                    if row.campaign.serving_status == 5:
+                                        campaign_serving_status = "Pending"
+                                    else:
+                                        if row.campaign.serving_status == 6:
+                                            campaign_serving_status = "Suspended"
 
                 # get campaign type name
                 # see this link for reference 
@@ -168,6 +195,7 @@ def campaign_info(refresh_token, customer_id, date_range):
                 data["campaign_budget"] = round((row.campaign_budget.amount_micros/1000000), 2)
                 data["start_date"] = row.campaign.start_date
                 data["status"] = campaign_status
+                data["serving_status"] = campaign_serving_status
                 data["campaign_type"] = campaign_type
                 data["impressions"] = row.metrics.impressions
                 data["cpc"] = round((row.metrics.average_cpc/1000000),2)

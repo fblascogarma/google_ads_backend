@@ -20,7 +20,8 @@ def list_accounts(refresh_token):
     "refresh_token": refresh_token,
     "client_id": GOOGLE_CLIENT_ID,
     "client_secret": GOOGLE_CLIENT_SECRET,
-    "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID}
+    "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+    "use_proto_plus": True}
 
     try:
         googleads_client = GoogleAdsClient.load_from_dict(credentials)
