@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.urls import path, include
-from .views import ArticleViewSet, UserViewSet, AdWordsCredentialsViewSet, authenticate, callback, list_ads_accounts, search_token, get_campaigns, get_keyword_themes_recommendations, get_location_recommendations, create_google_ads_account, get_budget, create_smart_campaign
+from .views import ArticleViewSet, UserViewSet, AdWordsCredentialsViewSet, authenticate, callback, list_ads_accounts, search_token, get_campaigns, get_keyword_themes_recommendations, get_location_recommendations, create_google_ads_account, get_budget, create_smart_campaign, get_billing
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -21,4 +21,5 @@ urlpatterns = [
     path('api/create-account/', create_google_ads_account),
     path('api/get-budget-recommendation/', get_budget),
     path('api/create-campaign/', create_smart_campaign),
+    path('api/get-billing/', get_billing),
 ]

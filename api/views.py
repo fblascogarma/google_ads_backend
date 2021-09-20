@@ -20,6 +20,7 @@ from .geo_location import get_geo_location_recommendations
 from .create_customer import create_client_customer
 from .budget import get_budget_recommendation
 from .create_smart_campaign import create_smart
+from .get_billing_info import billing_info
 
 
 # Create your views here.
@@ -96,7 +97,7 @@ def callback(request):
             return response
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Callback to get the refresh token and save it to our backend
+# Get list of accounts associated with the Google account the user used to authenticate
 @api_view(['POST'])
 def list_ads_accounts(request):
     if request.method == 'POST':
@@ -501,6 +502,42 @@ def create_smart_campaign(request):
             print(smart_campaign)
             
             response = JsonResponse(smart_campaign, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Get billing info of the customer_id from the request
+@api_view(['POST'])
+def get_billing(request):
+    if request.method == 'POST':
+        serializer = ReportingSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # if there is a refresh token, it means an existing user wants
+            # to create a new account and we should let them
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # call the function to get the campaigns
+            get_billing_info = billing_info(refresh_token, customer_id)
+            print(get_billing_info)
+
+            response = JsonResponse(get_billing_info, safe=False)
            
             return response
         return Response(data="bad request")

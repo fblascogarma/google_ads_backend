@@ -57,163 +57,244 @@ Parameters needed: credentials, customer_id, suggestion_info, landing_page,
 language_code, business_name, country_code, geo_target_names,
 display_name (in the test we use infos but in production it will be display_name)
 '''
-# step 1: get suggestion_info
-suggestion_info = client.get_type("SmartCampaignSuggestionInfo")
+# # step 1: get suggestion_info
+# suggestion_info = client.get_type("SmartCampaignSuggestionInfo")
 
-# Add the URL of the campaign's landing page.
-suggestion_info.final_url = landing_page
+# # Add the URL of the campaign's landing page.
+# suggestion_info.final_url = landing_page
 
-# Add the language code for the campaign.
-suggestion_info.language_code = language_code
+# # Add the language code for the campaign.
+# suggestion_info.language_code = language_code
 
-# get the infos
-# for the app we will use these lines that are commented out
-# infos = []
-# for i in display_name:
-#     try:
+# # get the infos
+# # for the app we will use these lines that are commented out
+# # infos = []
+# # for i in display_name:
+# #     try:
                     
-#         resource_name = KeywordThemesRecommendations.objects.get(display_name=i)
-#         # transform object into a string
-#         resource_name = str(resource_name)
-#         info = client.get_type("KeywordThemeInfo")
-#         info.keyword_theme_constant = resource_name
-#         infos.append(info)
+# #         resource_name = KeywordThemesRecommendations.objects.get(display_name=i)
+# #         # transform object into a string
+# #         resource_name = str(resource_name)
+# #         info = client.get_type("KeywordThemeInfo")
+# #         info.keyword_theme_constant = resource_name
+# #         infos.append(info)
 
-#     except KeywordThemesRecommendations.DoesNotExist:
-#         info = client.get_type("KeywordThemeInfo")
-#         info.free_form_keyword_theme = i
-#         infos.append(info)
+# #     except KeywordThemesRecommendations.DoesNotExist:
+# #         info = client.get_type("KeywordThemeInfo")
+# #         info.free_form_keyword_theme = i
+# #         infos.append(info)
 
-# print('print infos:')
-# print(infos)
-# for testing, we'll use the below lines that mimick the above lines
-infos = []
-resource_name_list = [
-    "keywordThemeConstants/6003199~0",
-    "keywordThemeConstants/154114~0",
-    "keywordThemeConstants/154114~119103"
-    ]
-for resource_name in resource_name_list:
-    info = client.get_type("KeywordThemeInfo")
-    info.keyword_theme_constant = resource_name
-    infos.append(info)
+# # print('print infos:')
+# # print(infos)
+# # for testing, we'll use the below lines that mimick the above lines
+# infos = []
+# resource_name_list = [
+#     "keywordThemeConstants/6003199~0",
+#     "keywordThemeConstants/154114~0",
+#     "keywordThemeConstants/154114~119103"
+#     ]
+# for resource_name in resource_name_list:
+#     info = client.get_type("KeywordThemeInfo")
+#     info.keyword_theme_constant = resource_name
+#     infos.append(info)
 
-free_kw_list = ["ropa para embarazada"]
-for kw in free_kw_list:
-    info = client.get_type("KeywordThemeInfo")
-    info.free_form_keyword_theme = kw
-    infos.append(info)
+# free_kw_list = ["ropa para embarazada"]
+# for kw in free_kw_list:
+#     info = client.get_type("KeywordThemeInfo")
+#     info.free_form_keyword_theme = kw
+#     infos.append(info)
 
 
 
-# get geo target constants for the geo target names selected by user
-geo_targets = []
-for name in geo_target_names:
+# # get geo target constants for the geo target names selected by user
+# geo_targets = []
+# for name in geo_target_names:
 
-    gtc_service = client.get_service("GeoTargetConstantService")
+#     gtc_service = client.get_service("GeoTargetConstantService")
 
-    gtc_request = client.get_type("SuggestGeoTargetConstantsRequest")
+#     gtc_request = client.get_type("SuggestGeoTargetConstantsRequest")
 
-    gtc_request.locale = language_code
-    gtc_request.country_code = country_code
-    # print('name:')
-    # print(name)
-    # The location names to get suggested geo target constants.
-    gtc_request.location_names.names.append(
-        name
-    )
-    # print('gtc_request.location_names')
-    # print(gtc_request.location_names)
+#     gtc_request.locale = language_code
+#     gtc_request.country_code = country_code
+#     # print('name:')
+#     # print(name)
+#     # The location names to get suggested geo target constants.
+#     gtc_request.location_names.names.append(
+#         name
+#     )
+#     # print('gtc_request.location_names')
+#     # print(gtc_request.location_names)
 
-    results = gtc_service.suggest_geo_target_constants(gtc_request)
+#     results = gtc_service.suggest_geo_target_constants(gtc_request)
 
-    location_resource_names = []
-    for suggestion in results.geo_target_constant_suggestions:
-        geo_target_constant = suggestion.geo_target_constant
+#     location_resource_names = []
+#     for suggestion in results.geo_target_constant_suggestions:
+#         geo_target_constant = suggestion.geo_target_constant
         
-        location_resource_names.append(geo_target_constant.resource_name)
+#         location_resource_names.append(geo_target_constant.resource_name)
 
-    # get the first one that is the one selected by the user
-    geo_targets.append(location_resource_names[0])
+#     # get the first one that is the one selected by the user
+#     geo_targets.append(location_resource_names[0])
 
-print(geo_targets)
+# print(geo_targets)
 
 
-# locations = geo_targets
-# locations = ['geoTargetConstants/1000073', 'geoTargetConstants/9041027']
-for location in geo_targets:
-    # Construct location information using the given geo target constant.
-    location_info = client.get_type("LocationInfo")
-    location_info.geo_target_constant = location
-    suggestion_info.location_list.locations.append(location_info)
+# # locations = geo_targets
+# # locations = ['geoTargetConstants/1000073', 'geoTargetConstants/9041027']
+# for location in geo_targets:
+#     # Construct location information using the given geo target constant.
+#     location_info = client.get_type("LocationInfo")
+#     location_info.geo_target_constant = location
+#     suggestion_info.location_list.locations.append(location_info)
 
-# Add the KeywordThemeInfo objects to the SuggestionInfo object.
-suggestion_info.keyword_themes.extend(infos)
+# # Add the KeywordThemeInfo objects to the SuggestionInfo object.
+# suggestion_info.keyword_themes.extend(infos)
+# # print('suggestion_info:')
+# # print(suggestion_info)
+
+# # Set either of the business_location_id or business_name, depending on
+# # whichever is provided.
+# # if business_location_id:
+# #     suggestion_info.business_location_id = business_location_id
+# # else:
+# #     suggestion_info.business_context.business_name = business_name
+# suggestion_info.business_context.business_name = business_name
+
+# # Add a schedule detailing which days of the week the business is open.
+# # This schedule describes a schedule in which the business is open on
+# # Mondays from 9am to 5pm.
+# ad_schedule_info = client.get_type("AdScheduleInfo")
+# # Set the day of this schedule as Monday.
+# ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.MONDAY
+# # Set the start hour to 9am.
+# ad_schedule_info.start_hour = 9
+# # Set the end hour to 5pm.
+# ad_schedule_info.end_hour = 17
+# # Set the start and end minute of zero, for example: 9:00 and 5:00.
+# zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+# ad_schedule_info.start_minute = zero_minute_of_hour
+# ad_schedule_info.end_minute = zero_minute_of_hour
+# suggestion_info.ad_schedules.append(ad_schedule_info)
+
 # print('suggestion_info:')
 # print(suggestion_info)
 
-# Set either of the business_location_id or business_name, depending on
-# whichever is provided.
-# if business_location_id:
-#     suggestion_info.business_location_id = business_location_id
-# else:
-#     suggestion_info.business_context.business_name = business_name
-suggestion_info.business_context.business_name = business_name
+# # step 2: get ad suggestion
+# sc_suggest_service = client.get_service("SmartCampaignSuggestService")
+# request = client.get_type("SuggestSmartCampaignAdRequest")
+# request.customer_id = customer_id
 
-# Add a schedule detailing which days of the week the business is open.
-# This schedule describes a schedule in which the business is open on
-# Mondays from 9am to 5pm.
-ad_schedule_info = client.get_type("AdScheduleInfo")
-# Set the day of this schedule as Monday.
-ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.MONDAY
-# Set the start hour to 9am.
-ad_schedule_info.start_hour = 9
-# Set the end hour to 5pm.
-ad_schedule_info.end_hour = 17
-# Set the start and end minute of zero, for example: 9:00 and 5:00.
-zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
-ad_schedule_info.start_minute = zero_minute_of_hour
-ad_schedule_info.end_minute = zero_minute_of_hour
-suggestion_info.ad_schedules.append(ad_schedule_info)
+# # Unlike the SuggestSmartCampaignBudgetOptions method, it's only possible
+# # to use suggestion_info to retrieve ad creative suggestions.
+# request.suggestion_info = suggestion_info
 
-print('suggestion_info:')
-print(suggestion_info)
+# # Issue a request to retrieve ad creative suggestions.
+# response = sc_suggest_service.suggest_smart_campaign_ad(request=request)
+# print('response:')
+# print(response)
 
-# step 2: get ad suggestion
-sc_suggest_service = client.get_service("SmartCampaignSuggestService")
-request = client.get_type("SuggestSmartCampaignAdRequest")
-request.customer_id = customer_id
+# # The SmartCampaignAdInfo object in the response contains a list of up to
+# # three headlines and two descriptions. Note that some of the suggestions
+# # may have empty strings as text. Before setting these on the ad you should
+# # review them and filter out any empty values.
+# ad_suggestions = response.ad_info
+# print('ad_suggestions:')
+# print(ad_suggestions)
 
-# Unlike the SuggestSmartCampaignBudgetOptions method, it's only possible
-# to use suggestion_info to retrieve ad creative suggestions.
-request.suggestion_info = suggestion_info
+# print("The following headlines were suggested:")
+# for headline in ad_suggestions.headlines:
+#     print(f"\t{headline.text or '<None>'}")
 
-# Issue a request to retrieve ad creative suggestions.
-response = sc_suggest_service.suggest_smart_campaign_ad(request=request)
-print('response:')
-print(response)
+# print("And the following descriptions were suggested:")
+# for description in ad_suggestions.descriptions:
+#     print(f"\t{description.text or '<None>'}")
 
-# The SmartCampaignAdInfo object in the response contains a list of up to
-# three headlines and two descriptions. Note that some of the suggestions
-# may have empty strings as text. Before setting these on the ad you should
-# review them and filter out any empty values.
-ad_suggestions = response.ad_info
-print('ad_suggestions:')
-print(ad_suggestions)
-
-print("The following headlines were suggested:")
-for headline in ad_suggestions.headlines:
-    print(f"\t{headline.text or '<None>'}")
-
-print("And the following descriptions were suggested:")
-for description in ad_suggestions.descriptions:
-    print(f"\t{description.text or '<None>'}")
-
-print(ad_suggestions)
-
+# print(ad_suggestions)
 
 '''
-Edit ad text TO BE COMPLETED
+Edit keyword themes - Current bug doesn't let you query the keyword_themes (500 Internal error encountered.)
+Parameters needed: credentials, customer_id, campaign_id, new_display_name
+'''
+# customer_id = str(2916870939) # billing set up      | account created via ui
+# campaign_id = str(14652304508)
+
+# # get the resource_name and text assets (headlines and descriptions)
+# ga_service = client.get_service("GoogleAdsService")
+# query = (f'''
+# SELECT campaign.id, campaign_criterion.resource_name, 
+# campaign_criterion.keyword_theme.keyword_theme_constant, 
+# campaign_criterion.keyword_theme.free_form_keyword_theme  
+# FROM campaign_criterion 
+# WHERE campaign.id = {campaign_id} ''')
+# response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+# for batch in response:
+#     for row in batch.results:
+#         kw_theme_constant = row.campaign_criterion.keyword_theme.keyword_theme_constant
+#         kw_theme_free_form = row.campaign_criterion.keyword_theme.free_form_keyword_theme
+#         print('kw_theme_constant:')
+#         print(kw_theme_constant) 
+#         print('kw_theme_free_form:')
+#         print(kw_theme_free_form) 
+
+'''
+Edit geo location targeting
+Parameters needed: credentials, customer_id, campaign_id,
+'''
+customer_id = str(2916870939) # billing set up      | account created via ui
+campaign_id = str(14652304508)
+
+# get the current geo location targets names
+ga_service = client.get_service("GoogleAdsService")
+query = (f'''
+SELECT campaign.id, campaign_criterion.resource_name, 
+campaign_criterion.location.geo_target_constant  
+FROM campaign_criterion 
+WHERE campaign.id = {campaign_id} ''')
+response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+locations = []
+for batch in response:
+    for row in batch.results:
+        geo_target_constants = row.campaign_criterion.location.geo_target_constant
+        # print('geo_target_constants:')
+        # print(geo_target_constants) 
+        if geo_target_constants:
+            locations.append(geo_target_constants)
+
+print('locations:')
+print(locations)
+
+location_targets = []
+for location in locations:
+    # Construct location information using the given geo target constant.
+    location_info = client.get_type("LocationInfo")
+    location_info.geo_target_constant = location
+    location_targets.append(location_info)
+
+print('location_targets:')
+print(location_targets)
+
+for geo_constants in locations:
+
+    print(geo_constants)
+    query = (f'''
+    SELECT geo_target_constant.name,  
+    campaign_criterion.location.geo_target_constant  
+    FROM geo_target_constant 
+    WHERE campaign_criterion.location.geo_target_constant = {geo_constants} ''')
+    response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+    geo_target_names = []
+    for batch in response:
+        for row in batch.results:
+            geo_target_constant_name = row.geo_target_constant.name
+            geo_target_names.append(geo_target_constant_name)
+
+print('geo_target_names:')
+print(geo_target_names)
+'''
+Edit ad text - Error saying that headlines and descriptions cannot be mutated
 Parameters needed: credentials, customer_id, campaign_id, new_headline_1,
 new_headline_2, new_headline_3, new_desc_1, new_desc_2
 '''
@@ -225,7 +306,7 @@ new_headline_2, new_headline_3, new_desc_1, new_desc_2
 # new_desc_1 = 'edit desc 1 test'
 # new_desc_2 = 'edit desc 2 test'
 
-# # get the current ad group id and text assets (headlines and descriptions)
+# # get the resource_name and text assets (headlines and descriptions)
 # ga_service = client.get_service("GoogleAdsService")
 # query = (f'''
 # SELECT campaign.id, ad_group_ad.ad.id, ad_group_ad.resource_name, 
@@ -237,15 +318,12 @@ new_headline_2, new_headline_3, new_desc_1, new_desc_2
 
 # for batch in response:
 #     for row in batch.results:
-#         ad_group_id = row.ad_group_ad.ad.id
+#         ad_group_ad_id = row.ad_group_ad.ad.id
 #         ad_group_ad_text_ad_descriptions = row.ad_group_ad.ad.smart_campaign_ad.descriptions
 #         ad_group_ad_text_ad_headlines = row.ad_group_ad.ad.smart_campaign_ad.headlines
-#         print('ad_group_id is:')
-#         print(ad_group_id)
-#         print('ad_group_ad_text_ad_descriptions:')
-#         print(ad_group_ad_text_ad_descriptions)  
-#         print('ad_group_ad_text_ad_headlines:')
-#         print(ad_group_ad_text_ad_headlines) 
+#         ad_group_ad_resource_name = row.ad_group_ad.resource_name
+#         print('ad_group_ad_resource_name:')
+#         print(ad_group_ad_resource_name) 
 
 # current_headline_1_user = ad_group_ad_text_ad_headlines[0].text
 # current_headline_2_user = ad_group_ad_text_ad_headlines[1].text
@@ -263,34 +341,18 @@ new_headline_2, new_headline_3, new_desc_1, new_desc_2
 # print('current_desc_2_user:')
 # print(current_desc_2_user)
 
-# # start update mutate operation
+# # start update ad group ad mutate operation
 # mutate_operation = client.get_type("MutateOperation")
-# ad_group = mutate_operation.ad_group_operation.update
-# ad_group.resource_name = client.get_service("AdGroupService").ad_group_path(
-#     customer_id, ad_group_id
-# )
-# print('mutate operation started')
-# # ad_group_ad_operation = mutate_operation.ad_group_ad_operation
 # ad_group_ad = mutate_operation.ad_group_ad_operation.update
-# # ad_group_ad = mutate_operation.ad_group_ad_operation.update
-# # campaign_budget_operation = mutate_operation.campaign_budget_operation
-# # campaign_budget = campaign_budget_operation.update
 
-# # # set new budget amount
-# # campaign_budget.amount_micros = new_budget
-
-# # use  the ad_group_id for the AdGroupService to get the resource_name
-# # ad_group_ad.resource_name = client.get_service("AdGroupService").ad_group_path(
-# #     customer_id, ad_group_id
-# # )
-# ad_group_ad.ad_group = client.get_service("AdGroupService").ad_group_path(
-#     customer_id, ad_group_id
-# )
+# # set the resource name of the ad_group_ad
+# ad_group_ad.resource_name = ad_group_ad_resource_name
 # print('ad_group_ad:')
 # print(ad_group_ad)
 
+# # set new ad
 # ad = ad_group_ad.ad.smart_campaign_ad
-# # At most, three headlines can be specified for a Smart campaign ad.
+
 # headline_1 = client.get_type("AdTextAsset")
 # headline_1.text = new_headline_1
 # headline_2 = client.get_type("AdTextAsset")
@@ -298,7 +360,7 @@ new_headline_2, new_headline_3, new_desc_1, new_desc_2
 # headline_3 = client.get_type("AdTextAsset")
 # headline_3.text = new_headline_3
 # ad.headlines.extend([headline_1, headline_2, headline_3])
-# # At most, two descriptions can be specified for a Smart campaign ad.
+
 # description_1 = client.get_type("AdTextAsset")
 # description_1.text = new_desc_1
 # description_2 = client.get_type("AdTextAsset")
@@ -308,7 +370,10 @@ new_headline_2, new_headline_3, new_desc_1, new_desc_2
 # print('ad:')
 # print(ad)
 
-# # Retrieve a FieldMask for the fields configured in the campaign.
+# ad_group_ad_operation = mutate_operation
+
+# # create a FieldMask for the fields updated in the campaign and 
+# # copy it to the operation's update_mask field
 # client.copy_from(
 #     mutate_operation.ad_group_ad_operation.update_mask,
 #     protobuf_helpers.field_mask(None, ad_group_ad._pb),
@@ -318,7 +383,8 @@ new_headline_2, new_headline_3, new_desc_1, new_desc_2
 # response = ga_service.mutate(
 #     customer_id=customer_id,
 #     mutate_operations=[
-#         mutate_operation,
+#         # ad_group_operation, 
+#         ad_group_ad_operation,
 #     ],
 # )
 # print('response:')
