@@ -15,7 +15,8 @@ from .views import (
     create_google_ads_account, 
     get_budget, create_smart_campaign, 
     get_billing, get_sc_settings, enable_campaign,
-    pause_campaign, delete_campaign
+    pause_campaign, delete_campaign,
+    edit_campaign_name
     )
 from rest_framework.routers import DefaultRouter
 
@@ -42,4 +43,5 @@ urlpatterns = [
     path('api/sc-settings/enable/', enable_campaign),
     path('api/sc-settings/pause/', pause_campaign),
     path('api/sc-settings/delete/', delete_campaign),
+    path('api/sc-settings/edit-name/', edit_campaign_name),
 ]

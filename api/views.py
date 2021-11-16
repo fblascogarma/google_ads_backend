@@ -15,7 +15,8 @@ from .serializers import (
     NewAccountCustomerIDSerializer, 
     GetBudgetRecommendationsSerializer, 
     CreateSmartCampaignSerializer, 
-    CampaignSettingsSerializer
+    CampaignSettingsSerializer,
+    CampaignNameSerializer
     )
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -37,7 +38,7 @@ from .create_smart_campaign import create_smart
 from .get_billing_info import billing_info
 from .edit_sc import (
     delete_sc, sc_settings, enable_sc, 
-    pause_sc, delete_sc
+    pause_sc, delete_sc, edit_name_sc
     )
 
 
@@ -710,6 +711,53 @@ def delete_campaign(request):
             print(new_status)
 
             response = JsonResponse(new_status, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Edit name of Smart Campaign
+@api_view(['POST'])
+def edit_campaign_name(request):
+    if request.method == 'POST':
+        serializer = CampaignNameSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # else use the refresh token associated with that account
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            # get the campaign_name
+            new_campaign_name = serializer['campaign_name'].value
+
+            # call the function to edit the smart campaign name
+            new_name = edit_name_sc(
+                refresh_token, 
+                customer_id, 
+                campaign_id, 
+                new_campaign_name
+                )
+            print(new_name)
+
+            response = JsonResponse(new_name, safe=False)
            
             return response
         return Response(data="bad request")

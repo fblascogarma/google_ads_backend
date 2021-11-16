@@ -477,3 +477,83 @@ def delete_sc(refresh_token, customer_id, campaign_id):
 
     print(status) 
     return status
+
+def edit_name_sc(refresh_token, customer_id, campaign_id, new_campaign_name):
+    '''
+    Change name of smart campaign - OK
+    Parameters needed: credentials, customer_id, campaign_id, new_campaign_name
+    '''
+    # Configurations
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+    GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+
+    # Configure using dict (the refresh token will be a dynamic value)
+    credentials = {
+    "developer_token": GOOGLE_DEVELOPER_TOKEN,
+    "refresh_token": refresh_token,
+    "client_id": GOOGLE_CLIENT_ID,
+    "client_secret": GOOGLE_CLIENT_SECRET,
+    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+    "linked_customer_id": customer_id,
+    "use_proto_plus": True}
+
+    client = GoogleAdsClient.load_from_dict(credentials)
+
+    # start update mutate operation
+    mutate_operation = client.get_type("MutateOperation")
+    campaign = (
+        mutate_operation.campaign_operation.update
+    )
+
+    # get CampaignService for the campaign_id
+    campaign_service = client.get_service("CampaignService")
+    campaign.resource_name = campaign_service.campaign_path(
+        customer_id, campaign_id
+    )
+
+    # change name of the campaign
+    campaign.name = new_campaign_name
+
+    # create field mask to update operation
+    client.copy_from(
+        mutate_operation.campaign_operation.update_mask,
+        protobuf_helpers.field_mask(None, campaign._pb),
+    )
+
+    # get the service to use the mutate method
+    ga_service = client.get_service("GoogleAdsService")
+
+    # send the mutate request
+    response = ga_service.mutate(
+        customer_id=customer_id,
+        mutate_operations=[
+            mutate_operation,
+        ],
+    )
+    
+    print("response:")
+    print(response)
+
+    # get the new name to send it to the frontend
+    query = ('SELECT campaign.id, campaign.name '
+    'FROM campaign '
+    'WHERE campaign.id = '+ campaign_id + ' ')
+    response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+    name = []
+    data = {}
+    for batch in response:
+        for row in batch.results:
+            # get campaign name
+            data["new_campaign_name"] = row.campaign.name
+            
+            print('new_campaign_name:')
+            print(row.campaign.name)
+
+    name.append(data)
+    json.dumps(name)
+
+    print(name) 
+    return name

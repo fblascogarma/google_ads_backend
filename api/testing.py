@@ -13,7 +13,7 @@ from pyasn1.type.univ import Null
 # customer_id = str(4597538560) # no billing        | account created via api
 customer_id = str(2916870939) # billing set up      | account created via ui
 # campaign_id = str(14648734935)    # used it to test remove campaign, and it was successful
-campaign_id = str(14652304508)
+campaign_id = str(14652327041)
 new_budget = 3*1000000
 landing_page = 'https://www.enjoymommyhood.com.ar/'     # for suggestion_info
 language_code = 'es'                                    # for suggestion_info
@@ -52,6 +52,68 @@ credentials = {
 "use_proto_plus": True}
 
 client = GoogleAdsClient.load_from_dict(credentials)
+
+'''
+Edit campaign name - OK
+Parameters needed: credentials, customer_id, campaign_id, new_campaign_name
+'''
+
+# this will come from the frontend
+new_campaign_name = 'Testing changing name of campaign'
+
+# start update mutate operation
+mutate_operation = client.get_type("MutateOperation")
+campaign = (
+    mutate_operation.campaign_operation.update
+)
+
+# get CampaignService for the campaign_id
+campaign_service = client.get_service("CampaignService")
+campaign.resource_name = campaign_service.campaign_path(
+    customer_id, campaign_id
+)
+
+# change name of the campaign
+campaign.name = new_campaign_name
+
+# create field mask to update operation
+client.copy_from(
+    mutate_operation.campaign_operation.update_mask,
+    protobuf_helpers.field_mask(None, campaign._pb),
+)
+
+# send the mutate request
+ga_service = client.get_service("GoogleAdsService")
+response = ga_service.mutate(
+    customer_id=customer_id,
+    mutate_operations=[
+        mutate_operation,
+    ],
+)
+
+print("response:")
+print(response)
+
+# get the new name to send it to the frontend
+query = ('SELECT campaign.id, campaign.name '
+'FROM campaign '
+'WHERE campaign.id = '+ campaign_id + ' ')
+response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+name = []
+data = {}
+for batch in response:
+    for row in batch.results:
+        # get campaign name
+        data["new_campaign_name"] = row.campaign.name
+        
+        print('new_campaign_name:')
+        print(row.campaign.name)
+
+name.append(data)
+json.dumps(name)
+
+print(name)
 
 '''
 Get ad suggestions - OK, but it comes empty for the data supplied, so I'm 
@@ -859,88 +921,88 @@ Parameters needed: credentials, customer_id, campaign_id
 Enable smart campaign - OK
 Parameters needed: credentials, customer_id, campaign_id
 '''
-customer_id = str(2916870939) # billing set up      | account created via ui
-campaign_id = str(14652304508)
+# customer_id = str(2916870939) # billing set up      | account created via ui
+# campaign_id = str(14652304508)
 
-# get the current campaign name and status
-ga_service = client.get_service("GoogleAdsService")
-query = ('SELECT campaign.id, campaign.name, campaign.status '
-'FROM campaign '
-'WHERE campaign.id = '+ campaign_id + ' ')
-response = ga_service.search_stream(customer_id=customer_id, query=query)
+# # get the current campaign name and status
+# ga_service = client.get_service("GoogleAdsService")
+# query = ('SELECT campaign.id, campaign.name, campaign.status '
+# 'FROM campaign '
+# 'WHERE campaign.id = '+ campaign_id + ' ')
+# response = ga_service.search_stream(customer_id=customer_id, query=query)
 
-for batch in response:
-    for row in batch.results:
-        campaign_name = row.campaign.name
-        current_campaign_status = row.campaign.status
-        print('campaign_name is:')
-        print(campaign_name)
-        print('current_campaign_status:')
-        print(current_campaign_status)    # you will show the name and current status to the user
+# for batch in response:
+#     for row in batch.results:
+#         campaign_name = row.campaign.name
+#         current_campaign_status = row.campaign.status
+#         print('campaign_name is:')
+#         print(campaign_name)
+#         print('current_campaign_status:')
+#         print(current_campaign_status)    # you will show the name and current status to the user
 
-# start update mutate operation
-mutate_operation = client.get_type("MutateOperation")
-campaign = (
-    mutate_operation.campaign_operation.update
-)
+# # start update mutate operation
+# mutate_operation = client.get_type("MutateOperation")
+# campaign = (
+#     mutate_operation.campaign_operation.update
+# )
 
-# get CampaignService for the campaign_id
-campaign_service = client.get_service("CampaignService")
-campaign.resource_name = campaign_service.campaign_path(
-    customer_id, campaign_id
-)
+# # get CampaignService for the campaign_id
+# campaign_service = client.get_service("CampaignService")
+# campaign.resource_name = campaign_service.campaign_path(
+#     customer_id, campaign_id
+# )
 
-# enable the campaign
-campaign.status = client.enums.CampaignStatusEnum.ENABLED
+# # enable the campaign
+# campaign.status = client.enums.CampaignStatusEnum.ENABLED
 
-# create field mask to update operation
-client.copy_from(
-    mutate_operation.campaign_operation.update_mask,
-    protobuf_helpers.field_mask(None, campaign._pb),
-)
+# # create field mask to update operation
+# client.copy_from(
+#     mutate_operation.campaign_operation.update_mask,
+#     protobuf_helpers.field_mask(None, campaign._pb),
+# )
 
-# send the mutate request
-response = ga_service.mutate(
-    customer_id=customer_id,
-    mutate_operations=[
-        mutate_operation,
-    ],
-)
+# # send the mutate request
+# response = ga_service.mutate(
+#     customer_id=customer_id,
+#     mutate_operations=[
+#         mutate_operation,
+#     ],
+# )
 
-print("response:")
-print(response)
+# print("response:")
+# print(response)
 
-# get the new status to send it to the frontend
-query = ('SELECT campaign.id, campaign.status '
-'FROM campaign '
-'WHERE campaign.id = '+ campaign_id + ' ')
-response = ga_service.search_stream(customer_id=customer_id, query=query)
+# # get the new status to send it to the frontend
+# query = ('SELECT campaign.id, campaign.status '
+# 'FROM campaign '
+# 'WHERE campaign.id = '+ campaign_id + ' ')
+# response = ga_service.search_stream(customer_id=customer_id, query=query)
 
-status = []
-data = {}
-for batch in response:
-    for row in batch.results:
-        # get campaign status name
-        # https://developers.google.com/google-ads/api/reference/rpc/v8/CampaignStatusEnum.CampaignStatus
-        if row.campaign.status == 0:
-            campaign_status = "Unspecified"
-        elif row.campaign.status == 1: 
-            campaign_status = "Unknown"
-        elif row.campaign.status == 2:
-            campaign_status = "Active"      # in Google's documentation they use 'Enabled' but 'Active' is more user-friendly
-        elif row.campaign.status == 3:
-            campaign_status = "Paused"
-        elif row.campaign.status == 4:
-            campaign_status = "Removed"
+# status = []
+# data = {}
+# for batch in response:
+#     for row in batch.results:
+#         # get campaign status name
+#         # https://developers.google.com/google-ads/api/reference/rpc/v8/CampaignStatusEnum.CampaignStatus
+#         if row.campaign.status == 0:
+#             campaign_status = "Unspecified"
+#         elif row.campaign.status == 1: 
+#             campaign_status = "Unknown"
+#         elif row.campaign.status == 2:
+#             campaign_status = "Active"      # in Google's documentation they use 'Enabled' but 'Active' is more user-friendly
+#         elif row.campaign.status == 3:
+#             campaign_status = "Paused"
+#         elif row.campaign.status == 4:
+#             campaign_status = "Removed"
         
-        data["new_status"] = campaign_status
-        print('new_status:')
-        print(campaign_status)
+#         data["new_status"] = campaign_status
+#         print('new_status:')
+#         print(campaign_status)
 
-status.append(data)
-json.dumps(status)
+# status.append(data)
+# json.dumps(status)
 
-print(status)
+# print(status)
 
 '''
 Remove campaign - OK

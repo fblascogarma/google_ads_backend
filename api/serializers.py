@@ -1,5 +1,14 @@
 from rest_framework import serializers
-from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, GetKeywordThemesRecommendations, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation, NewAccountCustomerID, GetBudgetRecommendations, CreateSmartCampaign, CampaignSettings
+from .models import (
+    Article, AdWordsCredentials, AntiForgeryToken, 
+    RefreshToken, MyToken, CustomerID, Reporting, 
+    GetKeywordThemesRecommendations, 
+    KeywordThemesRecommendations, 
+    LocationRecommendations, GoogleAdsAccountCreation, 
+    NewAccountCustomerID, GetBudgetRecommendations, 
+    CreateSmartCampaign, CampaignSettings,
+    CampaignName
+    )
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
 
@@ -110,3 +119,9 @@ class CampaignSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = CampaignSettings
         fields = ['refreshToken', 'customer_id', 'campaign_id']
+
+# Serializer for changing campaign name
+class CampaignNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CampaignName
+        fields = ['refreshToken', 'customer_id', 'campaign_id', 'campaign_name']
