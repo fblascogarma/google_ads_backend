@@ -2,7 +2,21 @@ from json.decoder import JSONDecoder
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import render
 from .models import Article, AdWordsCredentials, RefreshToken, NewAccountCustomerID
-from .serializers import ArticleSerializer, UserSerializer, AdWordsCredentialsSerializer, AntiForgeryTokenSerializer, RefreshTokenSerializer, MyTokenSerializer, ReportingSerializer, GetKeywordThemesRecommendationsSerializer, LocationRecommendationsSerializer, GoogleAdsAccountCreationSerializer, NewAccountCustomerIDSerializer, GetBudgetRecommendationsSerializer, CreateSmartCampaignSerializer
+from .serializers import (
+    ArticleSerializer, 
+    UserSerializer, 
+    AdWordsCredentialsSerializer, 
+    AntiForgeryTokenSerializer, 
+    RefreshTokenSerializer, 
+    MyTokenSerializer, ReportingSerializer, 
+    GetKeywordThemesRecommendationsSerializer, 
+    LocationRecommendationsSerializer, 
+    GoogleAdsAccountCreationSerializer, 
+    NewAccountCustomerIDSerializer, 
+    GetBudgetRecommendationsSerializer, 
+    CreateSmartCampaignSerializer, 
+    CampaignSettingsSerializer
+    )
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -21,6 +35,10 @@ from .create_customer import create_client_customer
 from .budget import get_budget_recommendation
 from .create_smart_campaign import create_smart
 from .get_billing_info import billing_info
+from .edit_sc import (
+    delete_sc, sc_settings, enable_sc, 
+    pause_sc, delete_sc
+    )
 
 
 # Create your views here.
@@ -319,6 +337,7 @@ def create_google_ads_account(request):
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 mytoken = serializer['mytoken'].value
+            
             # if there is a refresh token, it means an existing user wants
             # to create a new account and we should let them
             else: refresh_token = serializer['refreshToken'].value
@@ -380,8 +399,7 @@ def get_budget(request):
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
 
-            # if there is a refresh token, it means an existing user wants
-            # to create a new account and we should let them
+            # else use the refresh token associated with that account
             else: 
                 refresh_token = serializer['refreshToken'].value
 
@@ -438,8 +456,7 @@ def create_smart_campaign(request):
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
 
-            # if there is a refresh token, it means an existing user wants
-            # to create a new account and we should let them
+            # else use the refresh token associated with that account
             else: 
                 refresh_token = serializer['refreshToken'].value
 
@@ -524,8 +541,7 @@ def get_billing(request):
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
 
-            # if there is a refresh token, it means an existing user wants
-            # to create a new account and we should let them
+            # else use the refresh token associated with that account
             else: 
                 refresh_token = serializer['refreshToken'].value
 
@@ -538,6 +554,162 @@ def get_billing(request):
             print(get_billing_info)
 
             response = JsonResponse(get_billing_info, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Get campaign settings for the campaign_id from the request
+@api_view(['POST'])
+def get_sc_settings(request):
+    if request.method == 'POST':
+        serializer = CampaignSettingsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # else use the refresh token associated with that account
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            # call the function to get the campaign settings
+            sc_settings_info = sc_settings(refresh_token, customer_id, campaign_id)
+            print(sc_settings_info)
+
+            response = JsonResponse(sc_settings_info, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Enable a Smart Campaign
+@api_view(['POST'])
+def enable_campaign(request):
+    if request.method == 'POST':
+        serializer = CampaignSettingsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # else use the refresh token associated with that account
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            # call the function to enable the smart campaign
+            new_status = enable_sc(refresh_token, customer_id, campaign_id)
+            print(new_status)
+
+            response = JsonResponse(new_status, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Pause a Smart Campaign
+@api_view(['POST'])
+def pause_campaign(request):
+    if request.method == 'POST':
+        serializer = CampaignSettingsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # else use the refresh token associated with that account
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            # call the function to pause the smart campaign
+            new_status = pause_sc(refresh_token, customer_id, campaign_id)
+            print(new_status)
+
+            response = JsonResponse(new_status, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Delete a Smart Campaign
+@api_view(['POST'])
+def delete_campaign(request):
+    if request.method == 'POST':
+        serializer = CampaignSettingsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # else use the refresh token associated with that account
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            # call the function to delete the smart campaign
+            new_status = delete_sc(refresh_token, customer_id, campaign_id)
+            print(new_status)
+
+            response = JsonResponse(new_status, safe=False)
            
             return response
         return Response(data="bad request")

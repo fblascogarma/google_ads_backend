@@ -158,3 +158,13 @@ class CreateSmartCampaign(models.Model):
             self.business_name, self.headline_1_user, self.headline_2_user,
             self.headline_3_user, self.desc_1_user, self.desc_2_user, 
             self.campaign_name)
+
+# Model to serialize frontend data to get campaign settings
+class CampaignSettings(models.Model):                   
+    # we make the refreshToken optional in case user created account via Fran Ads
+    refreshToken = models.CharField(max_length=500, blank=True)
+    customer_id = models.CharField(max_length=500)
+    campaign_id = models.CharField(max_length=500)
+
+    def __str__(self): 
+        return self.refreshToken, self.customer_id, self.campaign_id

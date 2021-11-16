@@ -90,98 +90,71 @@ def campaign_info(refresh_token, customer_id, date_range):
                 # https://developers.google.com/google-ads/api/reference/rpc/v8/CampaignStatusEnum.CampaignStatus
                 if row.campaign.status == 0:
                     campaign_status = "Unspecified"
-                else: 
-                    if row.campaign.status == 1:
-                        campaign_status = "Unknown"
-                    else:
-                        if row.campaign.status == 2:
-                            campaign_status = "Active"      # in Google's documentation they use 'Enabled' but 'Active' is more user-friendly
-                        else:
-                            if row.campaign.status == 3:
-                                campaign_status = "Paused"
-                            else:
-                                if row.campaign.status == 4:
-                                    campaign_status = "Removed"
+                elif row.campaign.status == 1: 
+                    campaign_status = "Unknown"
+                elif row.campaign.status == 2:
+                    campaign_status = "Active"      # in Google's documentation they use 'Enabled' but 'Active' is more user-friendly
+                elif row.campaign.status == 3:
+                    campaign_status = "Paused"
+                elif row.campaign.status == 4:
+                    campaign_status = "Removed"
 
                 # get campaign serving status
                 # https://developers.google.com/google-ads/api/reference/rpc/v8/CampaignServingStatusEnum.CampaignServingStatus
                 if row.campaign.serving_status == 0:
                     campaign_serving_status = "Unspecified"
-                else: 
-                    if row.campaign.serving_status == 1:
-                        campaign_serving_status = "Unknown"
-                    else:
-                        if row.campaign.serving_status == 2:
-                            campaign_serving_status = "Serving"
-                        else:
-                            if row.campaign.serving_status == 3:
-                                campaign_serving_status = "None"
-                            else:
-                                if row.campaign.serving_status == 4:
-                                    campaign_serving_status = "Ended"
-                                else:
-                                    if row.campaign.serving_status == 5:
-                                        campaign_serving_status = "Pending"
-                                    else:
-                                        if row.campaign.serving_status == 6:
-                                            campaign_serving_status = "Suspended"
+                elif row.campaign.serving_status == 1: 
+                    campaign_serving_status = "Unknown"
+                elif row.campaign.serving_status == 2:
+                    campaign_serving_status = "Serving"
+                elif row.campaign.serving_status == 3:
+                    campaign_serving_status = "None"
+                elif row.campaign.serving_status == 4:
+                    campaign_serving_status = "Ended"
+                elif row.campaign.serving_status == 5:
+                    campaign_serving_status = "Pending"
+                elif row.campaign.serving_status == 6:
+                    campaign_serving_status = "Suspended"
 
                 # get campaign type name
                 # see this link for reference 
                 # https://developers.google.com/google-ads/api/reference/rpc/v8/AdvertisingChannelSubTypeEnum.AdvertisingChannelSubType
                 if row.campaign.advertising_channel_sub_type == 0:
                     campaign_type = "Unspecified"
-                else:
-                    if row.campaign.advertising_channel_sub_type == 1:
-                        campaign_type = "Unknown"
-                    else:
-                        if row.campaign.advertising_channel_sub_type == 2:
-                            campaign_type = "Mobile app for Search"
-                        else:
-                            if row.campaign.advertising_channel_sub_type == 3:
-                                campaign_type = "Mobile app for Display"
-                            else:
-                                if row.campaign.advertising_channel_sub_type == 4:
-                                    campaign_type = "AdWords Express for Search"
-                                else:
-                                    if row.campaign.advertising_channel_sub_type == 5:
-                                        campaign_type = "AdWords Express for Display"
-                                    else:
-                                        if row.campaign.advertising_channel_sub_type == 6:
-                                            campaign_type = "Smart Shopping"
-                                        else:
-                                            if row.campaign.advertising_channel_sub_type == 7:
-                                                campaign_type = "Gmail Ad"
-                                            else:
-                                                if row.campaign.advertising_channel_sub_type == 8:
-                                                    campaign_type = "Smart Display"
-                                                else:
-                                                    if row.campaign.advertising_channel_sub_type == 9:
-                                                        campaign_type = "Video Outstream"
-                                                    else:
-                                                        if row.campaign.advertising_channel_sub_type == 10:
-                                                            campaign_type = "Video TrueView for Action"
-                                                        else:
-                                                            if row.campaign.advertising_channel_sub_type == 11:
-                                                                campaign_type = "Non-skippable Video"
-                                                            else:
-                                                                if row.campaign.advertising_channel_sub_type == 12:
-                                                                    campaign_type = "App"
-                                                                else:
-                                                                    if row.campaign.advertising_channel_sub_type == 13:
-                                                                        campaign_type = "App for Engagement"
-                                                                    else:
-                                                                        if row.campaign.advertising_channel_sub_type == 14:
-                                                                            campaign_type = "Local"
-                                                                        else:
-                                                                            if row.campaign.advertising_channel_sub_type == 15:
-                                                                                campaign_type = "Shopping Comparison Listing"
-                                                                            else:
-                                                                                if row.campaign.advertising_channel_sub_type == 16:
-                                                                                    campaign_type = "Smart"
-                                                                                else:
-                                                                                    if row.campaign.advertising_channel_sub_type == 17:
-                                                                                        campaign_type = "Sequence Video Ads"
+                elif row.campaign.advertising_channel_sub_type == 1:
+                    campaign_type = "Unknown"
+                elif row.campaign.advertising_channel_sub_type == 2:
+                    campaign_type = "Mobile app for Search"
+                elif row.campaign.advertising_channel_sub_type == 3:
+                    campaign_type = "Mobile app for Display"
+                elif row.campaign.advertising_channel_sub_type == 4:
+                    campaign_type = "AdWords Express for Search"
+                elif row.campaign.advertising_channel_sub_type == 5:
+                    campaign_type = "AdWords Express for Display"
+                elif row.campaign.advertising_channel_sub_type == 6:
+                    campaign_type = "Smart Shopping"
+                elif row.campaign.advertising_channel_sub_type == 7:
+                    campaign_type = "Gmail Ad"
+                elif row.campaign.advertising_channel_sub_type == 8:
+                    campaign_type = "Smart Display"
+                elif row.campaign.advertising_channel_sub_type == 9:
+                    campaign_type = "Video Outstream"
+                elif row.campaign.advertising_channel_sub_type == 10:
+                    campaign_type = "Video TrueView for Action"
+                elif row.campaign.advertising_channel_sub_type == 11:
+                    campaign_type = "Non-skippable Video"
+                elif row.campaign.advertising_channel_sub_type == 12:
+                    campaign_type = "App"
+                elif row.campaign.advertising_channel_sub_type == 13:
+                    campaign_type = "App for Engagement"
+                elif row.campaign.advertising_channel_sub_type == 14:
+                    campaign_type = "Local"
+                elif row.campaign.advertising_channel_sub_type == 15:
+                    campaign_type = "Shopping Comparison Listing"
+                elif row.campaign.advertising_channel_sub_type == 16:
+                    campaign_type = "Smart"
+                elif row.campaign.advertising_channel_sub_type == 17:
+                    campaign_type = "Sequence Video Ads"
                     
                 # to solve the error of conv rate if there are zero conversions
                 if row.metrics.interactions == 0:

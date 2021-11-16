@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, GetKeywordThemesRecommendations, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation, NewAccountCustomerID, GetBudgetRecommendations, CreateSmartCampaign
+from .models import Article, AdWordsCredentials, AntiForgeryToken, RefreshToken, MyToken, CustomerID, Reporting, GetKeywordThemesRecommendations, KeywordThemesRecommendations, LocationRecommendations, GoogleAdsAccountCreation, NewAccountCustomerID, GetBudgetRecommendations, CreateSmartCampaign, CampaignSettings
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
 
@@ -104,3 +104,9 @@ class CreateSmartCampaignSerializer(serializers.ModelSerializer):
             'refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names', 
             'selected_budget', 'phone_number', 'business_name', 'headline_1_user', 'headline_2_user', 'headline_3_user',
             'desc_1_user', 'desc_2_user', 'campaign_name']
+
+# Serializer for getting campaign settings
+class CampaignSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CampaignSettings
+        fields = ['refreshToken', 'customer_id', 'campaign_id']

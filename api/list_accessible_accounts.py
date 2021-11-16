@@ -56,6 +56,7 @@ def list_accounts(refresh_token):
             except: print("user permission denied")
 
         json.dumps(customer_data)
+        print(customer_data)
 
         return customer_data
     
