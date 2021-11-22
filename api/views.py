@@ -16,7 +16,8 @@ from .serializers import (
     GetBudgetRecommendationsSerializer, 
     CreateSmartCampaignSerializer, 
     CampaignSettingsSerializer,
-    CampaignNameSerializer
+    CampaignNameSerializer,
+    EditCampaignBudgetSerializer
     )
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -38,7 +39,8 @@ from .create_smart_campaign import create_smart
 from .get_billing_info import billing_info
 from .edit_sc import (
     delete_sc, sc_settings, enable_sc, 
-    pause_sc, delete_sc, edit_name_sc
+    pause_sc, delete_sc, edit_name_sc,
+    edit_budget
     )
 
 
@@ -758,6 +760,58 @@ def edit_campaign_name(request):
             print(new_name)
 
             response = JsonResponse(new_name, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Edit budget of Smart Campaign
+@api_view(['POST'])
+def edit_campaign_budget(request):
+    if request.method == 'POST':
+        serializer = EditCampaignBudgetSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # else use the refresh token associated with that account
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            # get the new_budget
+            new_budget = serializer['new_budget'].value
+            new_budget = int(new_budget)
+
+            # get the budget_id
+            budget_id = serializer['budget_id'].value
+
+            # call the function to edit the smart campaign budget
+            new_campaign_budget = edit_budget(
+                refresh_token, 
+                customer_id, 
+                campaign_id, 
+                new_budget,
+                budget_id
+                )
+            print(new_campaign_budget)
+
+            response = JsonResponse(new_campaign_budget, safe=False)
            
             return response
         return Response(data="bad request")

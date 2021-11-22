@@ -53,12 +53,13 @@ def sc_settings(refresh_token, customer_id, campaign_id):
             elif row.campaign.status == 4:
                 data["status"] = "Removed"
                 
-    # get the business name, landing page, phone number, and language
+    # get the business name, landing page, phone number, language, and country
     query = (f'''
     SELECT campaign.id, smart_campaign_setting.business_name, 
     smart_campaign_setting.final_url, 
     smart_campaign_setting.phone_number.phone_number, 
-    smart_campaign_setting.advertising_language_code
+    smart_campaign_setting.advertising_language_code,
+    smart_campaign_setting.phone_number.country_code
     FROM smart_campaign_setting 
     WHERE campaign.id = {campaign_id} ''')
     response = ga_service.search_stream(customer_id=customer_id, query=query)
@@ -69,6 +70,7 @@ def sc_settings(refresh_token, customer_id, campaign_id):
             data["final_url"] = row.smart_campaign_setting.final_url
             data["phone_number"] = row.smart_campaign_setting.phone_number.phone_number
             data["language_code"] = row.smart_campaign_setting.advertising_language_code
+            data["country_code"] = row.smart_campaign_setting.phone_number.country_code
     
     # get the current budget id and amount
    
@@ -557,3 +559,82 @@ def edit_name_sc(refresh_token, customer_id, campaign_id, new_campaign_name):
 
     print(name) 
     return name
+
+def edit_budget(refresh_token, customer_id, campaign_id, new_budget, budget_id):
+    '''
+    Edit budget of smart campaign - OK
+    Parameters needed: credentials, customer_id, campaign_id, new_budget (in micros), budget_id
+    '''
+    # Configurations
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+    GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+
+    # Configure using dict (the refresh token will be a dynamic value)
+    credentials = {
+    "developer_token": GOOGLE_DEVELOPER_TOKEN,
+    "refresh_token": refresh_token,
+    "client_id": GOOGLE_CLIENT_ID,
+    "client_secret": GOOGLE_CLIENT_SECRET,
+    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+    "linked_customer_id": customer_id,
+    "use_proto_plus": True}
+
+    client = GoogleAdsClient.load_from_dict(credentials)
+
+    # start update mutate operation
+    mutate_operation = client.get_type("MutateOperation")
+    campaign_budget_operation = mutate_operation.campaign_budget_operation
+    campaign_budget = campaign_budget_operation.update
+
+    # set new budget amount
+    campaign_budget.amount_micros = new_budget
+
+    # use  the buget id for the CampaignBudgetservice to set the resource name of the campaign budget
+    campaign_budget.resource_name = client.get_service(
+        "CampaignBudgetService"
+    ).campaign_budget_path(customer_id, budget_id)
+    print('campaign_budget.resource_name:')
+    print(campaign_budget.resource_name)
+
+    # Retrieve a FieldMask for the fields configured in the campaign.
+    client.copy_from(
+        mutate_operation.campaign_budget_operation.update_mask,
+        protobuf_helpers.field_mask(None, campaign_budget._pb),
+    )
+    print('campaign_budget_operation.update_mask:')
+    print(campaign_budget_operation.update_mask)
+
+    # get the service to use the mutate method
+    ga_service = client.get_service("GoogleAdsService")
+
+    # send the mutate request
+    response = ga_service.mutate(
+        customer_id=customer_id,
+        mutate_operations=[
+            mutate_operation,
+        ],
+    )
+    
+    print("response:")
+    print(response)
+
+    # get the new budget to send it to the frontend
+    query = ('SELECT campaign.id, campaign_budget.id, campaign_budget.amount_micros '
+    'FROM campaign_budget '
+    'WHERE campaign.id = '+ campaign_id + ' ')
+    response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+    budget = []
+    data = {}
+    for batch in response:
+        for row in batch.results:
+            data["budget_id"] = row.campaign_budget.id
+            data["new_budget_micros"] = row.campaign_budget.amount_micros
+
+    budget.append(data)
+    json.dumps(budget)
+
+    print(budget) 
+    return budget

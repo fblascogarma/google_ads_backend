@@ -179,3 +179,15 @@ class CampaignName(models.Model):
 
     def __str__(self): 
         return self.refreshToken, self.customer_id, self.campaign_id, self.campaign_name
+
+# Model to edit campaign budget
+class EditCampaignBudget(models.Model):                   
+    # we make the refreshToken optional in case user created account via Fran Ads
+    refreshToken = models.CharField(max_length=500, blank=True)
+    customer_id = models.CharField(max_length=500)
+    campaign_id = models.CharField(max_length=500)
+    new_budget = models.CharField(max_length=500)
+    budget_id = models.CharField(max_length=500)
+
+    def __str__(self): 
+        return self.refreshToken, self.customer_id, self.campaign_id, self.new_budget, self.budget_id

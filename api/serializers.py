@@ -7,7 +7,7 @@ from .models import (
     LocationRecommendations, GoogleAdsAccountCreation, 
     NewAccountCustomerID, GetBudgetRecommendations, 
     CreateSmartCampaign, CampaignSettings,
-    CampaignName
+    CampaignName, EditCampaignBudget
     )
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
@@ -125,3 +125,9 @@ class CampaignNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = CampaignName
         fields = ['refreshToken', 'customer_id', 'campaign_id', 'campaign_name']
+
+# Serializer for changing campaign budget
+class EditCampaignBudgetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EditCampaignBudget
+        fields = ['refreshToken', 'customer_id', 'campaign_id', 'new_budget', 'budget_id']
