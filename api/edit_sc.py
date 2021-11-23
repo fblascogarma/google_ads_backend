@@ -33,11 +33,18 @@ def sc_settings(refresh_token, customer_id, campaign_id):
     campaign_settings = []
     data = {}
 
-    # get the current campaign name and status
+    # get the current campaign name, status, and performance metrics
     ga_service = client.get_service("GoogleAdsService")
-    query = ('SELECT campaign.id, campaign.name, campaign.status '
-    'FROM campaign '
-    'WHERE campaign.id = '+ campaign_id + ' ')
+    query = (f'''
+    SELECT campaign.id, campaign.name, 
+    campaign.status, metrics.impressions, metrics.clicks,
+    metrics.all_conversions, metrics.all_conversions_value,
+    metrics.interactions 
+    FROM campaign 
+    WHERE campaign.id = {campaign_id} ''')
+    # query = ('SELECT campaign.id, campaign.name, campaign.status '
+    # 'FROM campaign '
+    # 'WHERE campaign.id = '+ campaign_id + ' ')
     response = ga_service.search_stream(customer_id=customer_id, query=query)
 
     for batch in response:
@@ -52,6 +59,11 @@ def sc_settings(refresh_token, customer_id, campaign_id):
                 data["status"] = "Paused"
             elif row.campaign.status == 4:
                 data["status"] = "Removed"
+            data["impressions"] = row.metrics.impressions
+            data["interactions"] = row.metrics.interactions
+            data["clicks"] = row.metrics.clicks
+            data["conv"] = round(row.metrics.all_conversions, 0)
+            data["conv_value"] = round(row.metrics.all_conversions_value, 0)
                 
     # get the business name, landing page, phone number, language, and country
     query = (f'''
@@ -84,6 +96,31 @@ def sc_settings(refresh_token, customer_id, campaign_id):
             data["budget_id"] = row.campaign_budget.id
             data["budget_micros"] = row.campaign_budget.amount_micros
 
+    # get the campaign performance metrics
+    query = (f'''
+        SELECT 
+            campaign.id, 
+            campaign.name, 
+            campaign_budget.amount_micros, 
+            campaign.status, 
+            campaign.serving_status, 
+            campaign.start_date, 
+            campaign.advertising_channel_sub_type, 
+            metrics.average_cpc, 
+            metrics.average_cpm, 
+            metrics.clicks, 
+            metrics.interactions, 
+            metrics.interaction_rate, 
+            metrics.impressions, 
+            metrics.ctr, 
+            metrics.all_conversions, 
+            metrics.all_conversions_value, 
+            metrics.cost_micros, 
+            metrics.cost_per_all_conversions
+        FROM campaign
+        WHERE campaign.id = {campaign_id} ''')
+    
+    
     # get the resource_name and text assets (headlines and descriptions)
   
     query = (f'''
@@ -190,6 +227,7 @@ def sc_settings(refresh_token, customer_id, campaign_id):
                     row.campaign_criterion.criterion_id
                 )
 
+    # set(keyword_theme_constant_list)    # eliminate duplicates
     # print("keyword_theme_constant_list:")
     # print(keyword_theme_constant_list)
     
@@ -212,9 +250,8 @@ def sc_settings(refresh_token, customer_id, campaign_id):
         except:
             None
 
-    # print("keyword_theme_display_name_list:")
-    # print(keyword_theme_display_name_list)
-    data["keyword_themes"] = keyword_theme_display_name_list
+    # eliminate duplicates and add unique values only
+    data["keyword_themes"] = list(dict.fromkeys(keyword_theme_display_name_list))
 
     campaign_settings.append(data)
     json.dumps(campaign_settings)
