@@ -17,7 +17,8 @@ from .views import (
     get_billing, get_sc_settings, enable_campaign,
     pause_campaign, delete_campaign,
     edit_campaign_name,
-    edit_campaign_budget
+    edit_campaign_budget,
+    get_search_terms_report
     )
 from rest_framework.routers import DefaultRouter
 
@@ -46,4 +47,5 @@ urlpatterns = [
     path('api/sc-settings/delete/', delete_campaign),
     path('api/sc-settings/edit-name/', edit_campaign_name),
     path('api/sc-settings/edit-budget/', edit_campaign_budget),
+    path('api/get-search-terms-report/', get_search_terms_report),
 ]

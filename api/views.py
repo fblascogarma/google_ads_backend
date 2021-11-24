@@ -17,7 +17,8 @@ from .serializers import (
     CreateSmartCampaignSerializer, 
     CampaignSettingsSerializer,
     CampaignNameSerializer,
-    EditCampaignBudgetSerializer
+    EditCampaignBudgetSerializer,
+    SearchTermsReportSerializer
     )
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -42,6 +43,7 @@ from .edit_sc import (
     pause_sc, delete_sc, edit_name_sc,
     edit_budget
     )
+from .get_search_terms_report import search_terms_report
 
 
 # Create your views here.
@@ -812,6 +814,54 @@ def edit_campaign_budget(request):
             print(new_campaign_budget)
 
             response = JsonResponse(new_campaign_budget, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Get search terms report for smart campaign
+@api_view(['POST'])
+def get_search_terms_report(request):
+    if request.method == 'POST':
+        serializer = SearchTermsReportSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # if there is a refresh token, it means an existing user wants
+            # to create a new account and we should let them
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            # get the date range
+            date_range = serializer['date_range'].value
+            # print(date_range)
+
+            # call the function to get the search terms report
+            get_search_terms_info = search_terms_report(
+                refresh_token, 
+                customer_id, 
+                campaign_id, 
+                date_range)
+            print(get_search_terms_info)
+
+            response = JsonResponse(get_search_terms_info, safe=False)
            
             return response
         return Response(data="bad request")

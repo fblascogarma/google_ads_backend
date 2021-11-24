@@ -13,25 +13,25 @@ from pyasn1.type.univ import Null
 # customer_id = str(4597538560) # no billing        | account created via api
 customer_id = str(2916870939) # billing set up      | account created via ui
 # campaign_id = str(14648734935)    # used it to test remove campaign, and it was successful
-campaign_id = str(14652327041)
-new_budget = 3*1000000
-landing_page = 'https://www.enjoymommyhood.com.ar/'     # for suggestion_info
-language_code = 'es'                                    # for suggestion_info
-business_name = 'Enjoy Mommyhood'                       # for suggestion_info
-country_code = 'AR'                                     # for suggestion_info
-display_name = [
-    "ropa para embarazadas",
-    "corpiños para embarazadas",
-    "ropa formal para embarazadas",
-    "ropa de fiesta para embarazadas",
-    "ropa para embarazadas barata"
-    ]                                                   # for suggestion_info
-geo_target_names = [
-    "buenos aires",
-    "martinez",
-    "san isidro",
-    "olivos"
-    ]                                                   # for suggestion_info
+# campaign_id = str(14652327041)
+# new_budget = 3*1000000
+# landing_page = 'https://www.enjoymommyhood.com.ar/'     # for suggestion_info
+# language_code = 'es'                                    # for suggestion_info
+# business_name = 'Enjoy Mommyhood'                       # for suggestion_info
+# country_code = 'AR'                                     # for suggestion_info
+# display_name = [
+#     "ropa para embarazadas",
+#     "corpiños para embarazadas",
+#     "ropa formal para embarazadas",
+#     "ropa de fiesta para embarazadas",
+#     "ropa para embarazadas barata"
+#     ]                                                   # for suggestion_info
+# geo_target_names = [
+#     "buenos aires",
+#     "martinez",
+#     "san isidro",
+#     "olivos"
+#     ]                                                   # for suggestion_info
 
 
 # Configurations
@@ -54,66 +54,120 @@ credentials = {
 client = GoogleAdsClient.load_from_dict(credentials)
 
 '''
+Search terms report - OK
+Parameters needed: credentials, customer_id, campaign_id, 
+date_range (optional)
+'''
+campaign_id = str(9364937164)
+date_range = 'LAST_30_DAYS'
+
+# get the current campaign name, status, and performance metrics by search terms
+ga_service = client.get_service("GoogleAdsService")
+
+# with segments.date as a filter
+# query = (f'''
+# SELECT campaign.id, campaign.name, 
+# metrics.impressions, metrics.clicks,
+# segments.date, 
+# smart_campaign_search_term_view.search_term
+# FROM smart_campaign_search_term_view 
+# WHERE campaign.id = {campaign_id} 
+# AND segments.date DURING {date_range}
+# ORDER BY metrics.clicks DESC
+# LIMIT 10''')
+
+# without segments.date as a filter
+query = (f'''
+SELECT campaign.id, campaign.name, 
+metrics.impressions, metrics.clicks,
+metrics.cost_micros,
+smart_campaign_search_term_view.search_term
+FROM smart_campaign_search_term_view 
+WHERE campaign.id = {campaign_id} 
+ORDER BY metrics.clicks DESC
+LIMIT 10''')
+response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+# to store the search terms report data
+search_terms_report = []
+
+for batch in response:
+    for row in batch.results:
+        data_search_terms = {}
+        data_search_terms["search_term"] = row.smart_campaign_search_term_view.search_term
+        data_search_terms["search_term_impressions"] = row.metrics.impressions
+        data_search_terms["search_term_clicks"] = row.metrics.clicks
+        data_search_terms["search_term_cost"] = round((row.metrics.cost_micros/1000000), 2)
+        search_terms_report.append(data_search_terms)
+
+
+print(search_terms_report)
+print(len(search_terms_report))
+
+
+
+
+'''
 Edit campaign name - OK
 Parameters needed: credentials, customer_id, campaign_id, new_campaign_name
 '''
 
-# this will come from the frontend
-new_campaign_name = 'Testing changing name of campaign'
+# # this will come from the frontend
+# new_campaign_name = 'Testing changing name of campaign'
 
-# start update mutate operation
-mutate_operation = client.get_type("MutateOperation")
-campaign = (
-    mutate_operation.campaign_operation.update
-)
+# # start update mutate operation
+# mutate_operation = client.get_type("MutateOperation")
+# campaign = (
+#     mutate_operation.campaign_operation.update
+# )
 
-# get CampaignService for the campaign_id
-campaign_service = client.get_service("CampaignService")
-campaign.resource_name = campaign_service.campaign_path(
-    customer_id, campaign_id
-)
+# # get CampaignService for the campaign_id
+# campaign_service = client.get_service("CampaignService")
+# campaign.resource_name = campaign_service.campaign_path(
+#     customer_id, campaign_id
+# )
 
-# change name of the campaign
-campaign.name = new_campaign_name
+# # change name of the campaign
+# campaign.name = new_campaign_name
 
-# create field mask to update operation
-client.copy_from(
-    mutate_operation.campaign_operation.update_mask,
-    protobuf_helpers.field_mask(None, campaign._pb),
-)
+# # create field mask to update operation
+# client.copy_from(
+#     mutate_operation.campaign_operation.update_mask,
+#     protobuf_helpers.field_mask(None, campaign._pb),
+# )
 
-# send the mutate request
-ga_service = client.get_service("GoogleAdsService")
-response = ga_service.mutate(
-    customer_id=customer_id,
-    mutate_operations=[
-        mutate_operation,
-    ],
-)
+# # send the mutate request
+# ga_service = client.get_service("GoogleAdsService")
+# response = ga_service.mutate(
+#     customer_id=customer_id,
+#     mutate_operations=[
+#         mutate_operation,
+#     ],
+# )
 
-print("response:")
-print(response)
+# print("response:")
+# print(response)
 
-# get the new name to send it to the frontend
-query = ('SELECT campaign.id, campaign.name '
-'FROM campaign '
-'WHERE campaign.id = '+ campaign_id + ' ')
-response = ga_service.search_stream(customer_id=customer_id, query=query)
+# # get the new name to send it to the frontend
+# query = ('SELECT campaign.id, campaign.name '
+# 'FROM campaign '
+# 'WHERE campaign.id = '+ campaign_id + ' ')
+# response = ga_service.search_stream(customer_id=customer_id, query=query)
 
-name = []
-data = {}
-for batch in response:
-    for row in batch.results:
-        # get campaign name
-        data["new_campaign_name"] = row.campaign.name
+# name = []
+# data = {}
+# for batch in response:
+#     for row in batch.results:
+#         # get campaign name
+#         data["new_campaign_name"] = row.campaign.name
         
-        print('new_campaign_name:')
-        print(row.campaign.name)
+#         print('new_campaign_name:')
+#         print(row.campaign.name)
 
-name.append(data)
-json.dumps(name)
+# name.append(data)
+# json.dumps(name)
 
-print(name)
+# print(name)
 
 '''
 Get ad suggestions - OK, but it comes empty for the data supplied, so I'm 

@@ -191,3 +191,14 @@ class EditCampaignBudget(models.Model):
 
     def __str__(self): 
         return self.refreshToken, self.customer_id, self.campaign_id, self.new_budget, self.budget_id
+
+# Model to get search terms report
+class SearchTermsReport(models.Model):                   
+    # we make the refreshToken optional in case user created account via Fran Ads
+    refreshToken = models.CharField(max_length=500, blank=True)
+    customer_id = models.CharField(max_length=500)
+    campaign_id = models.CharField(max_length=500)
+    date_range = models.CharField(max_length=500)
+
+    def __str__(self): 
+        return self.refreshToken, self.customer_id, self.campaign_id, self.date_range

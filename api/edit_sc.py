@@ -42,9 +42,6 @@ def sc_settings(refresh_token, customer_id, campaign_id):
     metrics.interactions 
     FROM campaign 
     WHERE campaign.id = {campaign_id} ''')
-    # query = ('SELECT campaign.id, campaign.name, campaign.status '
-    # 'FROM campaign '
-    # 'WHERE campaign.id = '+ campaign_id + ' ')
     response = ga_service.search_stream(customer_id=customer_id, query=query)
 
     for batch in response:
@@ -95,31 +92,6 @@ def sc_settings(refresh_token, customer_id, campaign_id):
         for row in batch.results:
             data["budget_id"] = row.campaign_budget.id
             data["budget_micros"] = row.campaign_budget.amount_micros
-
-    # get the campaign performance metrics
-    query = (f'''
-        SELECT 
-            campaign.id, 
-            campaign.name, 
-            campaign_budget.amount_micros, 
-            campaign.status, 
-            campaign.serving_status, 
-            campaign.start_date, 
-            campaign.advertising_channel_sub_type, 
-            metrics.average_cpc, 
-            metrics.average_cpm, 
-            metrics.clicks, 
-            metrics.interactions, 
-            metrics.interaction_rate, 
-            metrics.impressions, 
-            metrics.ctr, 
-            metrics.all_conversions, 
-            metrics.all_conversions_value, 
-            metrics.cost_micros, 
-            metrics.cost_per_all_conversions
-        FROM campaign
-        WHERE campaign.id = {campaign_id} ''')
-    
     
     # get the resource_name and text assets (headlines and descriptions)
   
@@ -253,6 +225,7 @@ def sc_settings(refresh_token, customer_id, campaign_id):
     # eliminate duplicates and add unique values only
     data["keyword_themes"] = list(dict.fromkeys(keyword_theme_display_name_list))
 
+    # append all the data to the campaign_settings object
     campaign_settings.append(data)
     json.dumps(campaign_settings)
 
