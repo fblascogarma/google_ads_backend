@@ -276,8 +276,29 @@ def get_keyword_themes_recommendations(request):
             # get the language code
             language_code = serializer['language_code'].value
 
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+
+            # get the final_url
+            final_url = serializer['final_url'].value
+
+            # get the business_name
+            business_name = serializer['business_name'].value
+
+            # get the business_location_id
+            business_location_id = serializer['business_location_id'].value
+
             # call the function to get the recommendations
-            get_recommendations = get_keyword_themes_suggestions(refresh_token, keyword_text, country_code, language_code)
+            get_recommendations = get_keyword_themes_suggestions(
+                refresh_token, 
+                keyword_text, 
+                country_code, 
+                language_code,
+                customer_id,
+                final_url,
+                business_name,
+                business_location_id
+                )
             print(get_recommendations)
             
             response = JsonResponse(get_recommendations, safe=False)

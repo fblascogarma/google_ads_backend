@@ -74,7 +74,15 @@ class ReportingSerializer(serializers.ModelSerializer):
 class GetKeywordThemesRecommendationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GetKeywordThemesRecommendations
-        fields = ['refreshToken', 'keyword_text', 'country_code', 'language_code']
+        fields = ['refreshToken', 
+        'keyword_text', 
+        'country_code', 
+        'language_code', 
+        'customer_id',
+        'final_url',
+        'business_name',
+        'business_location_id'
+        ]
 
 # Serializer to store keyword themes recommendations
 class KeywordThemesRecommendationsSerializer(serializers.ModelSerializer):

@@ -8,7 +8,16 @@ from google.ads.googleads.errors import GoogleAdsException
 from .models import KeywordThemesRecommendations
 from .serializers import KeywordThemesRecommendationsSerializer
 
-def get_keyword_themes_suggestions(refresh_token, keyword_text, country_code, language_code):
+def get_keyword_themes_suggestions(
+    refresh_token, 
+    keyword_text, 
+    country_code, 
+    language_code,
+    customer_id,
+    final_url,
+    business_name,
+    business_location_id
+    ):
 
     try:
 
@@ -30,7 +39,85 @@ def get_keyword_themes_suggestions(refresh_token, keyword_text, country_code, la
 
         client = GoogleAdsClient.load_from_dict(credentials)
 
-        """Retrieves KeywordThemeConstants for the given criteria.
+        '''
+        Here starts the new service to get keyword theme recommendations
+        https://developers.google.com/google-ads/api/reference/rpc/v9/SmartCampaignSuggestService#suggestkeywordthemes
+        '''
+        print("customer_id")
+        print(customer_id)
+        print("final_url")
+        print(final_url)
+        print("business_name")
+        print(business_name)
+        print("business_location_id")
+        print(business_location_id)
+
+        # # Create SmartCampaignSuggestionInfo object to get recommendations
+        # suggestion_info = client.get_type("SmartCampaignSuggestionInfo")
+
+        # suggestion_info.final_url = final_url
+        # suggestion_info.language_code = language_code
+        # if business_location_id:
+        #     suggestion_info.business_location_id = business_location_id
+        # else:
+        #     suggestion_info.business_context.business_name = business_name
+
+        # sc_suggest_service = client.get_service(
+        # "SmartCampaignSuggestService"
+        # )
+        # request = client.get_type("SuggestKeywordThemesRequest")
+        # request.customer_id = customer_id
+        # request.suggestion_info = suggestion_info
+
+        # print("request")
+        # print(request)
+
+        # response = sc_suggest_service.suggest_keyword_themes(
+        #     request=request
+        # )
+        # print("response")
+        # print(response)
+
+        # keyword_theme_constants = response.keyword_themes
+        # print('keyword_theme_constants:')
+        # print(keyword_theme_constants)
+
+        # recommendations = []
+        # for i in keyword_theme_constants:
+
+        #     display_name = i.display_name
+        #     # send only the display_name to the frontend
+        #     recommendations.append(display_name)
+        #     resource_name = i.resource_name
+        #     # save display_name and resource_name in model
+        #     data_model = {}
+        #     data_model["resource_name"] = resource_name
+        #     data_model["display_name"] = display_name
+        #     serializer = KeywordThemesRecommendationsSerializer(data=data_model)
+        #     if serializer.is_valid():
+        #         # save it only if it is new data
+        #         try:
+        #             KeywordThemesRecommendations.objects.get(display_name=display_name)
+        #             print('data already exists in model')
+        #         except KeywordThemesRecommendations.DoesNotExist:
+        #             serializer.save()
+
+        # json.dumps(recommendations)
+
+        # return recommendations
+
+        '''
+        Here ends the new service to get keyword theme recommendations
+        '''
+
+        """
+        Here start the old service used to get keyword theme recommendations,
+        which used the KeywordThemeConstantService that was part of the
+        closed beta. With open beta, the preferred service to use is
+        SmartCampaignSuggestService that is used to get recommendations on
+        ad creatives and budget as well.
+
+        Retrieves KeywordThemeConstants for the given criteria.
         Args:
             client: an initialized GoogleAdsClient instance.
             keyword_text: a keyword used for generating keyword themes.
@@ -46,9 +133,14 @@ def get_keyword_themes_suggestions(refresh_token, keyword_text, country_code, la
         request.country_code = country_code
         request.language_code = language_code
 
+        print("request")
+        print(request)
+
         response = keyword_theme_constant_service.suggest_keyword_theme_constants(
             request=request
         )
+        print("response")
+        print(response)
     
         keyword_theme_constants = response.keyword_theme_constants
         print('keyword_theme_constants:')

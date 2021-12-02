@@ -63,12 +63,26 @@ class Reporting(models.Model):
 # Model to get keyword themes recommendations
 class GetKeywordThemesRecommendations(models.Model):                   
     refreshToken = models.CharField(max_length=500, blank=True)
-    keyword_text = models.CharField(max_length=500)
+    keyword_text = models.CharField(max_length=500, blank=True)
     country_code = models.CharField(max_length=500)
     language_code = models.CharField(max_length=500)
+    customer_id = models.CharField(max_length=500, blank=True)
+    final_url = models.CharField(max_length=500, blank=True)
+    business_name = models.CharField(max_length=500, blank=True)
+    business_location_id = models.CharField(max_length=500, blank=True)
+
 
     def __str__(self): 
-        return self.refreshToken, self.keyword_text, self.country_code, self.language_code
+        return (
+            self.refreshToken, 
+            self.keyword_text, 
+            self.country_code, 
+            self.language_code,
+            self.customer_id,
+            self.final_url,
+            self.business_name,
+            self.business_location_id,
+            )
 
 # Model to store the keyword themes recommendations
 class KeywordThemesRecommendations(models.Model):                   
