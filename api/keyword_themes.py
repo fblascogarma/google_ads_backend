@@ -16,7 +16,8 @@ def get_keyword_themes_suggestions(
     customer_id,
     final_url,
     business_name,
-    business_location_id
+    business_location_id,
+    geo_target_names
     ):
 
     try:
@@ -51,98 +52,80 @@ def get_keyword_themes_suggestions(
         print(business_name)
         print("business_location_id")
         print(business_location_id)
+        print("geo_target_names")
+        print(geo_target_names)
 
-        # # Create SmartCampaignSuggestionInfo object to get recommendations
-        # suggestion_info = client.get_type("SmartCampaignSuggestionInfo")
+        # Create a list of locations to target to be used in the recommendations
+        geo_targets = []
+        for name in geo_target_names:
 
-        # suggestion_info.final_url = final_url
-        # suggestion_info.language_code = language_code
-        # if business_location_id:
-        #     suggestion_info.business_location_id = business_location_id
-        # else:
-        #     suggestion_info.business_context.business_name = business_name
+            gtc_service = client.get_service("GeoTargetConstantService")
 
-        # sc_suggest_service = client.get_service(
-        # "SmartCampaignSuggestService"
-        # )
-        # request = client.get_type("SuggestKeywordThemesRequest")
-        # request.customer_id = customer_id
-        # request.suggestion_info = suggestion_info
+            gtc_request = client.get_type("SuggestGeoTargetConstantsRequest")
 
-        # print("request")
-        # print(request)
+            gtc_request.locale = language_code
+            gtc_request.country_code = country_code
+            # The location names to get suggested geo target constants.
+            gtc_request.location_names.names.append(
+                name
+            )
 
-        # response = sc_suggest_service.suggest_keyword_themes(
-        #     request=request
-        # )
-        # print("response")
-        # print(response)
+            results = gtc_service.suggest_geo_target_constants(gtc_request)
 
-        # keyword_theme_constants = response.keyword_themes
-        # print('keyword_theme_constants:')
-        # print(keyword_theme_constants)
+            location_resource_names = []
+            for suggestion in results.geo_target_constant_suggestions:
+                geo_target_constant = suggestion.geo_target_constant
+                
+                location_resource_names.append(geo_target_constant.resource_name)
 
-        # recommendations = []
-        # for i in keyword_theme_constants:
+            # get the first one that is the one selected by the user
+            geo_targets.append(location_resource_names[0])
 
-        #     display_name = i.display_name
-        #     # send only the display_name to the frontend
-        #     recommendations.append(display_name)
-        #     resource_name = i.resource_name
-        #     # save display_name and resource_name in model
-        #     data_model = {}
-        #     data_model["resource_name"] = resource_name
-        #     data_model["display_name"] = display_name
-        #     serializer = KeywordThemesRecommendationsSerializer(data=data_model)
-        #     if serializer.is_valid():
-        #         # save it only if it is new data
-        #         try:
-        #             KeywordThemesRecommendations.objects.get(display_name=display_name)
-        #             print('data already exists in model')
-        #         except KeywordThemesRecommendations.DoesNotExist:
-        #             serializer.save()
+        print('geo_targets:')
+        print(geo_targets)
 
-        # json.dumps(recommendations)
+        location_targets = []
+        for location in geo_targets:
+            # Construct location information using the given geo target constant.
+            location_info = client.get_type("LocationInfo")
+            location_info.geo_target_constant = location
+            location_targets.append(location_info)
 
-        # return recommendations
+        print("location_targets")
+        print(location_targets)
+        # location_list = client.get_type("LocationList")
+        # location_list.locations.append(location_targets)
+        # print('location_list:')
+        # print(location_list)
 
-        '''
-        Here ends the new service to get keyword theme recommendations
-        '''
+        # Create SmartCampaignSuggestionInfo object to get recommendations
+        suggestion_info = client.get_type("SmartCampaignSuggestionInfo")
 
-        """
-        Here start the old service used to get keyword theme recommendations,
-        which used the KeywordThemeConstantService that was part of the
-        closed beta. With open beta, the preferred service to use is
-        SmartCampaignSuggestService that is used to get recommendations on
-        ad creatives and budget as well.
+        suggestion_info.final_url = final_url
+        suggestion_info.language_code = language_code
+        if business_location_id:
+            suggestion_info.business_location_id = business_location_id
+        else:
+            suggestion_info.business_context.business_name = business_name
+        suggestion_info.location_list.locations = location_targets
 
-        Retrieves KeywordThemeConstants for the given criteria.
-        Args:
-            client: an initialized GoogleAdsClient instance.
-            keyword_text: a keyword used for generating keyword themes.
-        Returns:
-            a list of KeywordThemeConstants.
-        """
-
-        keyword_theme_constant_service = client.get_service(
-        "KeywordThemeConstantService"
+        sc_suggest_service = client.get_service(
+        "SmartCampaignSuggestService"
         )
-        request = client.get_type("SuggestKeywordThemeConstantsRequest")
-        request.query_text = keyword_text
-        request.country_code = country_code
-        request.language_code = language_code
+        request = client.get_type("SuggestKeywordThemesRequest")
+        request.customer_id = customer_id
+        request.suggestion_info = suggestion_info
 
         print("request")
         print(request)
 
-        response = keyword_theme_constant_service.suggest_keyword_theme_constants(
+        response = sc_suggest_service.suggest_keyword_themes(
             request=request
         )
         print("response")
         print(response)
-    
-        keyword_theme_constants = response.keyword_theme_constants
+
+        keyword_theme_constants = response.keyword_themes
         print('keyword_theme_constants:')
         print(keyword_theme_constants)
 
@@ -169,6 +152,70 @@ def get_keyword_themes_suggestions(
         json.dumps(recommendations)
 
         return recommendations
+
+        '''
+        Here ends the new service to get keyword theme recommendations
+        '''
+
+        """
+        Here start the old service used to get keyword theme recommendations,
+        which used the KeywordThemeConstantService that was part of the
+        closed beta. With open beta, the preferred service to use is
+        SmartCampaignSuggestService that is used to get recommendations on
+        ad creatives and budget as well.
+
+        Retrieves KeywordThemeConstants for the given criteria.
+        Args:
+            client: an initialized GoogleAdsClient instance.
+            keyword_text: a keyword used for generating keyword themes.
+        Returns:
+            a list of KeywordThemeConstants.
+        """
+
+        # keyword_theme_constant_service = client.get_service(
+        # "KeywordThemeConstantService"
+        # )
+        # request = client.get_type("SuggestKeywordThemeConstantsRequest")
+        # request.query_text = keyword_text
+        # request.country_code = country_code
+        # request.language_code = language_code
+
+        # print("request")
+        # print(request)
+
+        # response = keyword_theme_constant_service.suggest_keyword_theme_constants(
+        #     request=request
+        # )
+        # print("response")
+        # print(response)
+    
+        # keyword_theme_constants = response.keyword_theme_constants
+        # print('keyword_theme_constants:')
+        # print(keyword_theme_constants)
+
+        # recommendations = []
+        # for i in keyword_theme_constants:
+
+        #     display_name = i.display_name
+        #     # send only the display_name to the frontend
+        #     recommendations.append(display_name)
+        #     resource_name = i.resource_name
+        #     # save display_name and resource_name in model
+        #     data_model = {}
+        #     data_model["resource_name"] = resource_name
+        #     data_model["display_name"] = display_name
+        #     serializer = KeywordThemesRecommendationsSerializer(data=data_model)
+        #     if serializer.is_valid():
+        #         # save it only if it is new data
+        #         try:
+        #             KeywordThemesRecommendations.objects.get(display_name=display_name)
+        #             print('data already exists in model')
+        #         except KeywordThemesRecommendations.DoesNotExist:
+        #             serializer.save()
+
+        # json.dumps(recommendations)
+
+        # return recommendations
     
     except GoogleAdsException as ex:
         print(

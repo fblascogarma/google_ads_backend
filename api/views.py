@@ -288,6 +288,11 @@ def get_keyword_themes_recommendations(request):
             # get the business_location_id
             business_location_id = serializer['business_location_id'].value
 
+            # get the geo_target_names
+            geo_target_names = serializer['geo_target_names'].value
+            # transform string into a list
+            geo_target_names = geo_target_names.replace('"','').replace('[','').replace(']','').split(",")
+
             # call the function to get the recommendations
             get_recommendations = get_keyword_themes_suggestions(
                 refresh_token, 
@@ -297,7 +302,8 @@ def get_keyword_themes_recommendations(request):
                 customer_id,
                 final_url,
                 business_name,
-                business_location_id
+                business_location_id,
+                geo_target_names
                 )
             print(get_recommendations)
             

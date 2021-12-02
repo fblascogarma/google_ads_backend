@@ -35,14 +35,14 @@ class RefreshToken(models.Model):
     def __str__(self): 
         return self.refreshToken
 
-# Model to serialize mytoken
+# Model to store mytoken
 class MyToken(models.Model):                   
     mytoken = models.CharField(max_length=500)
 
     def __str__(self): 
         return self.mytoken
 
-# Model to serialize refresh token and customer id
+# Model to store refresh token and customer id
 class CustomerID(models.Model):                   
     refreshToken = models.CharField(max_length=500)
     customer_id = models.CharField(max_length=500)
@@ -50,7 +50,7 @@ class CustomerID(models.Model):
     def __str__(self): 
         return self.refreshToken, self.customer_id
 
-# Model to serialize frontend data to get info of campaigns
+# Model to store frontend data to get info of campaigns
 class Reporting(models.Model):                   
     # we make the refreshToken optional in case user created account via Fran Ads
     refreshToken = models.CharField(max_length=500, blank=True)
@@ -70,6 +70,8 @@ class GetKeywordThemesRecommendations(models.Model):
     final_url = models.CharField(max_length=500, blank=True)
     business_name = models.CharField(max_length=500, blank=True)
     business_location_id = models.CharField(max_length=500, blank=True)
+    geo_target_names = models.TextField(blank=True)
+
 
 
     def __str__(self): 
@@ -82,6 +84,7 @@ class GetKeywordThemesRecommendations(models.Model):
             self.final_url,
             self.business_name,
             self.business_location_id,
+            self.geo_target_names,
             )
 
 # Model to store the keyword themes recommendations
@@ -100,7 +103,12 @@ class LocationRecommendations(models.Model):
     location = models.CharField(max_length=500)
 
     def __str__(self): 
-        return self.refreshToken, self.location, self.country_code, self.language_code
+        return (
+            self.refreshToken, 
+            self.location, 
+            self.country_code, 
+            self.language_code
+            )
 
 # Model to create Google Ads account
 class GoogleAdsAccountCreation(models.Model):  
@@ -115,7 +123,14 @@ class GoogleAdsAccountCreation(models.Model):
     email_address = models.CharField(max_length=500)
 
     def __str__(self): 
-        return self.refreshToken, self.mytoken, self.time_zone, self.currency, self.account_name, self.email_address
+        return (
+            self.refreshToken, 
+            self.mytoken, 
+            self.time_zone, 
+            self.currency, 
+            self.account_name, 
+            self.email_address
+            )
 
 # Model for the customer id of the newly created Google Ads account
 # for users who had zero accounts created before
@@ -173,7 +188,7 @@ class CreateSmartCampaign(models.Model):
             self.headline_3_user, self.desc_1_user, self.desc_2_user, 
             self.campaign_name)
 
-# Model to serialize frontend data to get campaign settings
+# Model to store frontend data to get campaign settings
 class CampaignSettings(models.Model):                   
     # we make the refreshToken optional in case user created account via Fran Ads
     refreshToken = models.CharField(max_length=500, blank=True)
@@ -183,7 +198,7 @@ class CampaignSettings(models.Model):
     def __str__(self): 
         return self.refreshToken, self.customer_id, self.campaign_id
 
-# Model to serialize frontend data to change campaign name
+# Model to store frontend data to change campaign name
 class CampaignName(models.Model):                   
     # we make the refreshToken optional in case user created account via Fran Ads
     refreshToken = models.CharField(max_length=500, blank=True)

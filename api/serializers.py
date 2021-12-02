@@ -81,7 +81,8 @@ class GetKeywordThemesRecommendationsSerializer(serializers.ModelSerializer):
         'customer_id',
         'final_url',
         'business_name',
-        'business_location_id'
+        'business_location_id',
+        'geo_target_names'
         ]
 
 # Serializer to store keyword themes recommendations
