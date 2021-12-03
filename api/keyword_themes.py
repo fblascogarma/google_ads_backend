@@ -8,6 +8,13 @@ from google.ads.googleads.errors import GoogleAdsException
 from .models import KeywordThemesRecommendations
 from .serializers import KeywordThemesRecommendationsSerializer
 
+'''
+We are going to use two services to get keyword theme recommendations.
+1) SmartCampaignSuggestService 
+https://developers.google.com/google-ads/api/reference/rpc/v9/SmartCampaignSuggestService
+2) KeywordThemeConstantService
+https://developers.google.com/google-ads/api/reference/rpc/v9/KeywordThemeConstantService
+'''
 def get_keyword_themes_suggestions(
     refresh_token, 
     keyword_text, 
@@ -93,10 +100,6 @@ def get_keyword_themes_suggestions(
 
         print("location_targets")
         print(location_targets)
-        # location_list = client.get_type("LocationList")
-        # location_list.locations.append(location_targets)
-        # print('location_list:')
-        # print(location_list)
 
         # Create SmartCampaignSuggestionInfo object to get recommendations
         suggestion_info = client.get_type("SmartCampaignSuggestionInfo")
@@ -149,20 +152,19 @@ def get_keyword_themes_suggestions(
                 except KeywordThemesRecommendations.DoesNotExist:
                     serializer.save()
 
-        json.dumps(recommendations)
-
-        return recommendations
-
+        # json.dumps(recommendations)
         '''
         Here ends the new service to get keyword theme recommendations
         '''
 
         """
-        Here start the old service used to get keyword theme recommendations,
+        Here starts the old service used to get keyword theme recommendations,
         which used the KeywordThemeConstantService that was part of the
         closed beta. With open beta, the preferred service to use is
         SmartCampaignSuggestService that is used to get recommendations on
         ad creatives and budget as well.
+        However, we are using both to get more recommendations and it gives you
+        the flexibility of designing your own solution as you see best.
 
         Retrieves KeywordThemeConstants for the given criteria.
         Args:
@@ -172,50 +174,54 @@ def get_keyword_themes_suggestions(
             a list of KeywordThemeConstants.
         """
 
-        # keyword_theme_constant_service = client.get_service(
-        # "KeywordThemeConstantService"
-        # )
-        # request = client.get_type("SuggestKeywordThemeConstantsRequest")
-        # request.query_text = keyword_text
-        # request.country_code = country_code
-        # request.language_code = language_code
+        keyword_theme_constant_service = client.get_service(
+        "KeywordThemeConstantService"
+        )
+        request = client.get_type("SuggestKeywordThemeConstantsRequest")
+        request.query_text = keyword_text
+        request.country_code = country_code
+        request.language_code = language_code
 
-        # print("request")
-        # print(request)
+        print("request")
+        print(request)
 
-        # response = keyword_theme_constant_service.suggest_keyword_theme_constants(
-        #     request=request
-        # )
-        # print("response")
-        # print(response)
+        response = keyword_theme_constant_service.suggest_keyword_theme_constants(
+            request=request
+        )
+        print("response")
+        print(response)
     
-        # keyword_theme_constants = response.keyword_theme_constants
-        # print('keyword_theme_constants:')
-        # print(keyword_theme_constants)
+        keyword_theme_constants = response.keyword_theme_constants
+        print('keyword_theme_constants:')
+        print(keyword_theme_constants)
 
-        # recommendations = []
-        # for i in keyword_theme_constants:
+        recommendations_older_service = []
+        for i in keyword_theme_constants:
 
-        #     display_name = i.display_name
-        #     # send only the display_name to the frontend
-        #     recommendations.append(display_name)
-        #     resource_name = i.resource_name
-        #     # save display_name and resource_name in model
-        #     data_model = {}
-        #     data_model["resource_name"] = resource_name
-        #     data_model["display_name"] = display_name
-        #     serializer = KeywordThemesRecommendationsSerializer(data=data_model)
-        #     if serializer.is_valid():
-        #         # save it only if it is new data
-        #         try:
-        #             KeywordThemesRecommendations.objects.get(display_name=display_name)
-        #             print('data already exists in model')
-        #         except KeywordThemesRecommendations.DoesNotExist:
-        #             serializer.save()
+            display_name = i.display_name
+            # send only the display_name to the frontend
+            recommendations_older_service.append(display_name)
+            resource_name = i.resource_name
+            # save display_name and resource_name in model
+            data_model = {}
+            data_model["resource_name"] = resource_name
+            data_model["display_name"] = display_name
+            serializer = KeywordThemesRecommendationsSerializer(data=data_model)
+            if serializer.is_valid():
+                # save it only if it is new data
+                try:
+                    KeywordThemesRecommendations.objects.get(display_name=display_name)
+                    print('data already exists in model')
+                except KeywordThemesRecommendations.DoesNotExist:
+                    serializer.save()
 
-        # json.dumps(recommendations)
+        # join recommendations from both services
+        for i in recommendations_older_service:
+            recommendations.append(i)
 
-        # return recommendations
+        json.dumps(recommendations)
+
+        return recommendations
     
     except GoogleAdsException as ex:
         print(
