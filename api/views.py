@@ -457,11 +457,23 @@ def get_budget(request):
             # get the landing_page
             landing_page = serializer['landing_page'].value
 
+            # get the business_name
+            business_name = serializer['business_name'].value
+
+            # get the business_location_id
+            business_location_id = serializer['business_location_id'].value
+
             # call the function to get the recommendations
             get_recommendations = get_budget_recommendation(
-                refresh_token, customer_id, display_name, 
-                landing_page, geo_target_names, language_code, 
-                country_code)
+                refresh_token, 
+                customer_id, 
+                display_name, 
+                landing_page, 
+                geo_target_names, 
+                language_code, 
+                country_code,
+                business_location_id,
+                business_name)
             print(get_recommendations)
             
             response = JsonResponse(get_recommendations, safe=False)

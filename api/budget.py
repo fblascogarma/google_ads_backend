@@ -9,9 +9,15 @@ from .models import KeywordThemesRecommendations
 
 
 def get_budget_recommendation(
-    refresh_token, customer_id, display_name, 
-    landing_page, geo_target_names, language_code, 
-    country_code):
+    refresh_token, 
+    customer_id, 
+    display_name, 
+    landing_page, 
+    geo_target_names, 
+    language_code, 
+    country_code, 
+    business_location_id,
+    business_name):
 
     try:
     
@@ -86,6 +92,11 @@ def get_budget_recommendation(
 
         # Add the URL of the campaign's landing page.
         suggestion_info.final_url = landing_page
+        suggestion_info.language_code = language_code
+        if business_location_id:
+            suggestion_info.business_location_id = business_location_id
+        else:
+            suggestion_info.business_context.business_name = business_name
 
         # get geo target constants for the geo target names selected by user
         geo_targets = []

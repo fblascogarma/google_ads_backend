@@ -74,16 +74,17 @@ class ReportingSerializer(serializers.ModelSerializer):
 class GetKeywordThemesRecommendationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GetKeywordThemesRecommendations
-        fields = ['refreshToken', 
-        'keyword_text', 
-        'country_code', 
-        'language_code', 
-        'customer_id',
-        'final_url',
-        'business_name',
-        'business_location_id',
-        'geo_target_names'
-        ]
+        fields = [
+            'refreshToken', 
+            'keyword_text', 
+            'country_code', 
+            'language_code', 
+            'customer_id',
+            'final_url',
+            'business_name',
+            'business_location_id',
+            'geo_target_names'
+            ]
 
 # Serializer to store keyword themes recommendations
 class KeywordThemesRecommendationsSerializer(serializers.ModelSerializer):
@@ -113,7 +114,17 @@ class NewAccountCustomerIDSerializer(serializers.ModelSerializer):
 class GetBudgetRecommendationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GetBudgetRecommendations
-        fields = ['refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names']
+        fields = [
+            'refreshToken', 
+            'customer_id', 
+            'display_name', 
+            'language_code', 
+            'country_code', 
+            'landing_page', 
+            'geo_target_names',
+            'business_location_id',
+            'business_name'
+            ]
 
 # Serializer to create smart campaign
 class CreateSmartCampaignSerializer(serializers.ModelSerializer):

@@ -214,6 +214,9 @@ def get_keyword_themes_suggestions(
                     print('data already exists in model')
                 except KeywordThemesRecommendations.DoesNotExist:
                     serializer.save()
+        '''
+        Here ends the recommendations from the older service
+        '''
 
         # join recommendations from both services
         for i in recommendations_older_service:

@@ -67,6 +67,9 @@ def create_smart(
         print('print infos:')
         print(infos)
 
+        '''
+        Step 2 - set location targeting
+        '''
         # Step 2: get location targets with the name format the api needs to create campaign
 
         # Setp 2.1: get geo target constants for the geo target names selected by user
@@ -109,9 +112,10 @@ def create_smart(
         print('location_targets:')
         print(location_targets)
 
+        """
+        Step 3: create budget operation for the campaign to be created
 
-        # Step 3: create budget operation for the campaign to be created
-        """Creates a MutateOperation that creates a new CampaignBudget.
+        Creates a MutateOperation that creates a new CampaignBudget.
         A temporary ID will be assigned to this campaign budget so that it can be
         referenced by other objects being created in the same Mutate request.
         Args:
@@ -143,8 +147,10 @@ def create_smart(
         print('campaign_budget_operation')
         print(campaign_budget_operation)
 
-        # Step 4: create SC operation
-        """Creates a MutateOperation that creates a new Smart campaign.
+        """
+        Step 4: create SC operation
+        
+        Creates a MutateOperation that creates a new Smart campaign.
         A temporary ID will be assigned to this campaign so that it can
         be referenced by other objects being created in the same Mutate request.
         Args:
@@ -183,8 +189,10 @@ def create_smart(
         print('smart_campaign_operation:')
         print(smart_campaign_operation)
 
-        # Step 5: create SC setting operation
-        """Creates a MutateOperation to create a new SmartCampaignSetting.
+        """
+        Step 5: create SC setting operation
+
+        Creates a MutateOperation to create a new SmartCampaignSetting.
         SmartCampaignSettings are unique in that they only support UPDATE
         operations, which are used to update and create them. Below we will
         use a temporary ID in the resource name to associate it with the
@@ -236,9 +244,11 @@ def create_smart(
         print('smart_campaign_setting_operation:')
         print(smart_campaign_setting_operation)
 
-        # Step 6: create campaign criterion operation
-
-        """Creates a list of MutateOperations that create new campaign criteria.
+        
+        """
+        Step 6: create campaign criterion operation
+        
+        Creates a list of MutateOperations that create new campaign criteria.
         Args:
             client: an initialized GoogleAdsClient instance.
             customer_id: a client customer ID.
@@ -287,8 +297,10 @@ def create_smart(
         print('campaign_criterion_operations:')
         print(campaign_criterion_operations)
 
-        # Step 7: create ad group operation
-        """Creates a MutateOperation that creates a new ad group.
+        """
+        Step 7: create ad group operation
+        
+        Creates a MutateOperation that creates a new ad group.
         A temporary ID will be used in the campaign resource name for this
         ad group to associate it with the Smart campaign created in earlier steps.
         A temporary ID will also be used for its own resource name so that we can
@@ -319,8 +331,10 @@ def create_smart(
         print('ad_group_operation:')
         print(ad_group_operation)
 
-        # step 8: create ad group ad operation
-        """Creates a MutateOperation that creates a new ad group ad.
+        """
+        Step 8: create ad group ad operation
+        
+        Creates a MutateOperation that creates a new ad group ad.
         A temporary ID will be used in the ad group resource name for this
         ad group ad to associate it with the ad group created in earlier steps.
         Args:
@@ -358,7 +372,9 @@ def create_smart(
         print('ad_group_ad_operation:')
         print(ad_group_ad_operation)
 
-        # step 9: create smart campaign
+        '''
+        Step 9: create smart campaign
+        '''
         googleads_service = client.get_service("GoogleAdsService")
 
         # Send the operations into a single Mutate request.
