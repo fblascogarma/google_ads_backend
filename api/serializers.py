@@ -110,7 +110,7 @@ class NewAccountCustomerIDSerializer(serializers.ModelSerializer):
         model = NewAccountCustomerID
         fields = ['mytoken', 'customer_id']
 
-# Serializer to get budget recommendations
+# Serializer to get budget recommendations and ad creative recomm.
 class GetBudgetRecommendationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GetBudgetRecommendations

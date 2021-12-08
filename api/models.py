@@ -142,6 +142,8 @@ class NewAccountCustomerID(models.Model):
         return self.customer_id
 
 # Model to get budget recommendations
+# and ad creative recommendations (headlines and descriptions)
+# because input is the same so simplifying models
 class GetBudgetRecommendations(models.Model):                   
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
