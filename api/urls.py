@@ -19,7 +19,8 @@ from .views import (
     edit_campaign_name,
     edit_campaign_budget,
     get_search_terms_report,
-    get_ad_creatives
+    get_ad_creatives,
+    edit_ad_creative
     )
 from rest_framework.routers import DefaultRouter
 
@@ -50,4 +51,5 @@ urlpatterns = [
     path('api/sc-settings/edit-name/', edit_campaign_name),
     path('api/sc-settings/edit-budget/', edit_campaign_budget),
     path('api/get-search-terms-report/', get_search_terms_report),
+    path('api/sc-settings/edit-ad-creative/', edit_ad_creative),
 ]

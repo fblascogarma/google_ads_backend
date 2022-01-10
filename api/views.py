@@ -18,7 +18,8 @@ from .serializers import (
     CampaignSettingsSerializer,
     CampaignNameSerializer,
     EditCampaignBudgetSerializer,
-    SearchTermsReportSerializer
+    SearchTermsReportSerializer,
+    EditAdCreativeSerializer
     )
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -42,7 +43,7 @@ from .get_billing_info import billing_info
 from .edit_sc import (
     delete_sc, sc_settings, enable_sc, 
     pause_sc, delete_sc, edit_name_sc,
-    edit_budget
+    edit_budget, edit_ad
     )
 from .get_search_terms_report import search_terms_report
 
@@ -971,6 +972,62 @@ def get_search_terms_report(request):
             print(get_search_terms_info)
 
             response = JsonResponse(get_search_terms_info, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Edit ad creative of Smart Campaign
+@api_view(['POST'])
+def edit_ad_creative(request):
+    if request.method == 'POST':
+        serializer = EditAdCreativeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # else use the refresh token associated with that account
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            
+            # get the creatives for the modified headlines and desc
+            new_headline_1 = serializer['new_headline_1'].value
+            new_headline_2 = serializer['new_headline_2'].value
+            new_headline_3 = serializer['new_headline_3'].value
+            new_desc_1 = serializer['new_desc_1'].value
+            new_desc_2 = serializer['new_desc_2'].value
+
+            # call the function to edit the smart campaign budget
+            new_ad_creative = edit_ad(
+                refresh_token, 
+                customer_id, 
+                campaign_id, 
+                new_headline_1, 
+                new_headline_2, 
+                new_headline_3, 
+                new_desc_1,
+                new_desc_2
+                )
+            print(new_ad_creative)
+
+            response = JsonResponse(new_ad_creative, safe=False)
            
             return response
         return Response(data="bad request")

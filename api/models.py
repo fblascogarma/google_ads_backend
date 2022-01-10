@@ -242,3 +242,27 @@ class SearchTermsReport(models.Model):
 
     def __str__(self): 
         return self.refreshToken, self.customer_id, self.campaign_id, self.date_range
+
+# Model to edit ad creative of Smart Campaign
+# (headlines and descriptions)
+class EditAdCreative(models.Model):                   
+    refreshToken = models.CharField(max_length=500, blank=True)
+    customer_id = models.CharField(max_length=500)
+    campaign_id = models.CharField(max_length=500)
+    new_headline_1 = models.CharField(max_length=30, blank=True)
+    new_headline_2 = models.CharField(max_length=30, blank=True)
+    new_headline_3 = models.CharField(max_length=30, blank=True)
+    new_desc_1 = models.CharField(max_length=90, blank=True)
+    new_desc_2 = models.CharField(max_length=90, blank=True)
+
+
+    def __str__(self): 
+        return (
+            self.refreshToken, 
+            self.customer_id, 
+            self.new_headline_1, 
+            self.new_headline_2, 
+            self.new_headline_3, 
+            self.new_desc_1,
+            self.new_desc_2,
+            )

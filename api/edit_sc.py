@@ -199,9 +199,8 @@ def sc_settings(refresh_token, customer_id, campaign_id):
                     row.campaign_criterion.criterion_id
                 )
 
-    # set(keyword_theme_constant_list)    # eliminate duplicates
-    # print("keyword_theme_constant_list:")
-    # print(keyword_theme_constant_list)
+    print("keyword_theme_constant_list:")
+    print(keyword_theme_constant_list)
     
 
     # step 2: fetch the attributes of keyword_theme_constant based on resource name
@@ -222,6 +221,8 @@ def sc_settings(refresh_token, customer_id, campaign_id):
         except:
             None
 
+    print("keyword_theme_display_name_list:")
+    print(keyword_theme_display_name_list)
     # eliminate duplicates and add unique values only
     data["keyword_themes"] = list(dict.fromkeys(keyword_theme_display_name_list))
 
@@ -648,3 +649,187 @@ def edit_budget(refresh_token, customer_id, campaign_id, new_budget, budget_id):
 
     print(budget) 
     return budget
+
+def edit_ad(
+    refresh_token, 
+    customer_id, 
+    campaign_id, 
+    new_headline_1, 
+    new_headline_2, 
+    new_headline_3, 
+    new_desc_1,
+    new_desc_2):
+    '''
+    Edit ad text - OK
+    Parameters needed: credentials, customer_id, campaign_id, new_headline_1,
+    new_headline_2, new_headline_3, new_desc_1, new_desc_2
+    '''
+    # Configurations
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+    GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+
+    # Configure using dict (the refresh token will be a dynamic value)
+    credentials = {
+    "developer_token": GOOGLE_DEVELOPER_TOKEN,
+    "refresh_token": refresh_token,
+    "client_id": GOOGLE_CLIENT_ID,
+    "client_secret": GOOGLE_CLIENT_SECRET,
+    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+    "linked_customer_id": customer_id,
+    "use_proto_plus": True}
+
+    client = GoogleAdsClient.load_from_dict(credentials)
+
+    # get the resource_name and text assets (headlines and descriptions)
+    ga_service = client.get_service("GoogleAdsService")
+    query = (f'''
+    SELECT campaign.id, ad_group_ad.ad.id,  
+    ad_group_ad.ad.smart_campaign_ad.headlines, 
+    ad_group_ad.ad.smart_campaign_ad.descriptions  
+    FROM ad_group_ad 
+    WHERE campaign.id = {campaign_id} ''')
+    response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+    for batch in response:
+        for row in batch.results:
+            ad_id = row.ad_group_ad.ad.id
+            ad_group_ad_text_ad_descriptions = row.ad_group_ad.ad.smart_campaign_ad.descriptions
+            ad_group_ad_text_ad_headlines = row.ad_group_ad.ad.smart_campaign_ad.headlines
+
+    current_headline_1_user = ad_group_ad_text_ad_headlines[0].text
+    current_headline_2_user = ad_group_ad_text_ad_headlines[1].text
+    current_headline_3_user = ad_group_ad_text_ad_headlines[2].text
+    print('current_headline_1_user:')
+    print(current_headline_1_user)
+    print('current_headline_2_user:')
+    print(current_headline_2_user)
+    print('current_headline_3_user:')
+    print(current_headline_3_user)
+    current_desc_1_user = ad_group_ad_text_ad_descriptions[0].text
+    current_desc_2_user = ad_group_ad_text_ad_descriptions[1].text
+    print('current_desc_1_user:')
+    print(current_desc_1_user)
+    print('current_desc_2_user:')
+    print(current_desc_2_user)
+
+    # get resource_name of the ad using the ad_id
+    ad_service = client.get_service("AdService")
+    ad_resource_name = ad_service.ad_path(
+        customer_id, ad_id
+    )
+    print('ad_resource_name:')
+    print(ad_resource_name)
+
+    # start ad_operation that is used to mutate ads
+    mutate_operation = client.get_type("MutateOperation")
+    ad_operation = mutate_operation.ad_operation
+
+    # set the resource to be updated
+    ad = ad_operation.update
+    ad.resource_name = ad_resource_name
+    print('ad:')
+    print(ad)
+
+    # if new, set the new headlines
+    if len(new_headline_1) != 0:
+        headline_1 = client.get_type("AdTextAsset")
+        headline_1.text = new_headline_1
+    elif len(new_headline_1) == 0:
+        headline_1 = client.get_type("AdTextAsset")
+        headline_1.text = current_headline_1_user
+    if len(new_headline_2) != 0:
+        headline_2 = client.get_type("AdTextAsset")
+        headline_2.text = new_headline_2
+    elif len(new_headline_2) == 0:
+        headline_2 = client.get_type("AdTextAsset")
+        headline_2.text = current_headline_2_user
+    if len(new_headline_3) != 0:
+        headline_3 = client.get_type("AdTextAsset")
+        headline_3.text = new_headline_3
+    elif len(new_headline_3) == 0:
+        headline_3 = client.get_type("AdTextAsset")
+        headline_3.text = current_headline_3_user
+    ad.smart_campaign_ad.headlines.extend([headline_1, headline_2, headline_3])
+
+    # if new, set the new descriptions
+    if len(new_desc_1) != 0:
+        description_1 = client.get_type("AdTextAsset")
+        description_1.text = new_desc_1
+    elif len(new_desc_1) == 0:
+        description_1 = client.get_type("AdTextAsset")
+        description_1.text = current_desc_1_user
+    if len(new_desc_2) != 0:
+        description_2 = client.get_type("AdTextAsset")
+        description_2.text = new_desc_2
+    elif len(new_desc_2) == 0:
+        description_2 = client.get_type("AdTextAsset")
+        description_2.text = current_desc_2_user
+    ad.smart_campaign_ad.descriptions.extend([description_1, description_2])
+
+    print('new ad:')
+    print(ad)
+
+    # create a FieldMask for the fields updated in the ad and 
+    # copy it to the ad_operation's update_mask field
+    client.copy_from(
+        mutate_operation.ad_operation.update_mask,
+        protobuf_helpers.field_mask(None, ad._pb),
+    )
+    print('ad_operation.update_mask:')
+    print(ad_operation.update_mask)
+
+
+    response = ad_service.mutate_ads(
+        customer_id = customer_id,
+        operations = [
+            ad_operation
+        ],
+    )
+
+    print('response:')
+    print(response)
+
+    # get the new ad creative to send it to the frontend
+    query = (f'''
+    SELECT campaign.id, ad_group_ad.ad.id,  
+    ad_group_ad.ad.smart_campaign_ad.headlines, 
+    ad_group_ad.ad.smart_campaign_ad.descriptions  
+    FROM ad_group_ad 
+    WHERE campaign.id = {campaign_id} ''')
+    response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+    for batch in response:
+        for row in batch.results:
+            ad_id = row.ad_group_ad.ad.id
+            ad_group_ad_text_ad_descriptions = row.ad_group_ad.ad.smart_campaign_ad.descriptions
+            ad_group_ad_text_ad_headlines = row.ad_group_ad.ad.smart_campaign_ad.headlines
+
+    new_ad_creative = []
+    data = {}
+    data["new_head_1_api"] = ad_group_ad_text_ad_headlines[0].text
+    data["new_head_2_api"] = ad_group_ad_text_ad_headlines[1].text
+    data["new_head_3_api"] = ad_group_ad_text_ad_headlines[2].text
+    data["new_desc_1_api"] = ad_group_ad_text_ad_descriptions[0].text
+    data["new_desc_2_api"] = ad_group_ad_text_ad_descriptions[1].text
+    new_ad_creative.append(data)
+    json.dumps(new_ad_creative)
+    print("new_ad_creative:")
+    print(new_ad_creative)
+    return new_ad_creative
+    # new_headline_1_user = ad_group_ad_text_ad_headlines[0].text
+    # new_headline_2_user = ad_group_ad_text_ad_headlines[1].text
+    # new_headline_3_user = ad_group_ad_text_ad_headlines[2].text
+    # print('new_headline_1_user:')
+    # print(new_headline_1_user)
+    # print('new_headline_2_user:')
+    # print(new_headline_2_user)
+    # print('new_headline_3_user:')
+    # print(new_headline_3_user)
+    # new_desc_1_user = ad_group_ad_text_ad_descriptions[0].text
+    # new_desc_2_user = ad_group_ad_text_ad_descriptions[1].text
+    # print('new_desc_1_user:')
+    # print(new_desc_1_user)
+    # print('new_desc_2_user:')
+    # print(new_desc_2_user)

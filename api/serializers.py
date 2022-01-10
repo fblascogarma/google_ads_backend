@@ -8,7 +8,7 @@ from .models import (
     NewAccountCustomerID, GetBudgetRecommendations, 
     CreateSmartCampaign, CampaignSettings,
     CampaignName, EditCampaignBudget,
-    SearchTermsReport
+    SearchTermsReport, EditAdCreative
     )
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
@@ -158,3 +158,11 @@ class SearchTermsReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = SearchTermsReport
         fields = ['refreshToken', 'customer_id', 'campaign_id', 'date_range']
+
+# Serializer for changing campaign ad creative (headlines and descriptions)
+class EditAdCreativeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EditAdCreative
+        fields = ['refreshToken', 'customer_id', 'campaign_id', 
+        'new_headline_1', 'new_headline_2', 'new_headline_3', 
+        'new_desc_1', 'new_desc_2']
