@@ -176,170 +176,170 @@ Parameters needed: credentials, customer_id, suggestion_info, landing_page,
 language_code, business_name, country_code, geo_target_names,
 display_name (in the test we use infos but in production it will be display_name)
 '''
-landing_page = 'https://www.enjoymommyhood.com.ar/'     # for suggestion_info
-language_code = 'es'                                    # for suggestion_info
-business_name = 'Enjoy Mommyhood'                       # for suggestion_info
-country_code = 'AR'                                     # for suggestion_info
-geo_target_names = [
-    "buenos aires",
-    "martinez",
-    "san isidro",
-    "olivos"
-    ]                                                   # for suggestion_info
+# landing_page = 'https://www.enjoymommyhood.com.ar/'     # for suggestion_info
+# language_code = 'es'                                    # for suggestion_info
+# business_name = 'Enjoy Mommyhood'                       # for suggestion_info
+# country_code = 'AR'                                     # for suggestion_info
+# geo_target_names = [
+#     "buenos aires",
+#     "martinez",
+#     "san isidro",
+#     "olivos"
+#     ]                                                   # for suggestion_info
 
-# step 1: get suggestion_info
-suggestion_info = client.get_type("SmartCampaignSuggestionInfo")
+# # step 1: get suggestion_info
+# suggestion_info = client.get_type("SmartCampaignSuggestionInfo")
 
-# Add the URL of the campaign's landing page.
-suggestion_info.final_url = landing_page
+# # Add the URL of the campaign's landing page.
+# suggestion_info.final_url = landing_page
 
-# Add the language code for the campaign.
-suggestion_info.language_code = language_code
+# # Add the language code for the campaign.
+# suggestion_info.language_code = language_code
 
-# get the infos
-# for the app we will use these lines that are commented out
-# infos = []
-# for i in display_name:
-#     try:
+# # get the infos
+# # for the app we will use these lines that are commented out
+# # infos = []
+# # for i in display_name:
+# #     try:
                     
-#         resource_name = KeywordThemesRecommendations.objects.get(display_name=i)
-#         # transform object into a string
-#         resource_name = str(resource_name)
-#         info = client.get_type("KeywordThemeInfo")
-#         info.keyword_theme_constant = resource_name
-#         infos.append(info)
+# #         resource_name = KeywordThemesRecommendations.objects.get(display_name=i)
+# #         # transform object into a string
+# #         resource_name = str(resource_name)
+# #         info = client.get_type("KeywordThemeInfo")
+# #         info.keyword_theme_constant = resource_name
+# #         infos.append(info)
 
-#     except KeywordThemesRecommendations.DoesNotExist:
-#         info = client.get_type("KeywordThemeInfo")
-#         info.free_form_keyword_theme = i
-#         infos.append(info)
+# #     except KeywordThemesRecommendations.DoesNotExist:
+# #         info = client.get_type("KeywordThemeInfo")
+# #         info.free_form_keyword_theme = i
+# #         infos.append(info)
 
-# print('print infos:')
-# print(infos)
-# for testing, we'll use the below lines that mimick the above lines
-infos = []
-resource_name_list = [
-    "keywordThemeConstants/6003199~0",
-    "keywordThemeConstants/154114~0",
-    "keywordThemeConstants/154114~119103"
-    ]
-for resource_name in resource_name_list:
-    info = client.get_type("KeywordThemeInfo")
-    info.keyword_theme_constant = resource_name
-    infos.append(info)
+# # print('print infos:')
+# # print(infos)
+# # for testing, we'll use the below lines that mimick the above lines
+# infos = []
+# resource_name_list = [
+#     "keywordThemeConstants/6003199~0",
+#     "keywordThemeConstants/154114~0",
+#     "keywordThemeConstants/154114~119103"
+#     ]
+# for resource_name in resource_name_list:
+#     info = client.get_type("KeywordThemeInfo")
+#     info.keyword_theme_constant = resource_name
+#     infos.append(info)
 
-free_kw_list = ["ropa para embarazada"]
-for kw in free_kw_list:
-    info = client.get_type("KeywordThemeInfo")
-    info.free_form_keyword_theme = kw
-    infos.append(info)
+# free_kw_list = ["ropa para embarazada"]
+# for kw in free_kw_list:
+#     info = client.get_type("KeywordThemeInfo")
+#     info.free_form_keyword_theme = kw
+#     infos.append(info)
 
 
 
-# get geo target constants for the geo target names selected by user
-geo_targets = []
-for name in geo_target_names:
+# # get geo target constants for the geo target names selected by user
+# geo_targets = []
+# for name in geo_target_names:
 
-    gtc_service = client.get_service("GeoTargetConstantService")
+#     gtc_service = client.get_service("GeoTargetConstantService")
 
-    gtc_request = client.get_type("SuggestGeoTargetConstantsRequest")
+#     gtc_request = client.get_type("SuggestGeoTargetConstantsRequest")
 
-    gtc_request.locale = language_code
-    gtc_request.country_code = country_code
-    # print('name:')
-    # print(name)
-    # The location names to get suggested geo target constants.
-    gtc_request.location_names.names.append(
-        name
-    )
-    # print('gtc_request.location_names')
-    # print(gtc_request.location_names)
+#     gtc_request.locale = language_code
+#     gtc_request.country_code = country_code
+#     # print('name:')
+#     # print(name)
+#     # The location names to get suggested geo target constants.
+#     gtc_request.location_names.names.append(
+#         name
+#     )
+#     # print('gtc_request.location_names')
+#     # print(gtc_request.location_names)
 
-    results = gtc_service.suggest_geo_target_constants(gtc_request)
+#     results = gtc_service.suggest_geo_target_constants(gtc_request)
 
-    location_resource_names = []
-    for suggestion in results.geo_target_constant_suggestions:
-        geo_target_constant = suggestion.geo_target_constant
+#     location_resource_names = []
+#     for suggestion in results.geo_target_constant_suggestions:
+#         geo_target_constant = suggestion.geo_target_constant
         
-        location_resource_names.append(geo_target_constant.resource_name)
+#         location_resource_names.append(geo_target_constant.resource_name)
 
-    # get the first one that is the one selected by the user
-    geo_targets.append(location_resource_names[0])
+#     # get the first one that is the one selected by the user
+#     geo_targets.append(location_resource_names[0])
 
-print(geo_targets)
+# print(geo_targets)
 
 
-# locations = geo_targets
-# locations = ['geoTargetConstants/1000073', 'geoTargetConstants/9041027']
-for location in geo_targets:
-    # Construct location information using the given geo target constant.
-    location_info = client.get_type("LocationInfo")
-    location_info.geo_target_constant = location
-    suggestion_info.location_list.locations.append(location_info)
+# # locations = geo_targets
+# # locations = ['geoTargetConstants/1000073', 'geoTargetConstants/9041027']
+# for location in geo_targets:
+#     # Construct location information using the given geo target constant.
+#     location_info = client.get_type("LocationInfo")
+#     location_info.geo_target_constant = location
+#     suggestion_info.location_list.locations.append(location_info)
 
-# Add the KeywordThemeInfo objects to the SuggestionInfo object.
-suggestion_info.keyword_themes.extend(infos)
+# # Add the KeywordThemeInfo objects to the SuggestionInfo object.
+# suggestion_info.keyword_themes.extend(infos)
+# # print('suggestion_info:')
+# # print(suggestion_info)
+
+# # Set either of the business_location_id or business_name, depending on
+# # whichever is provided.
+# # if business_location_id:
+# #     suggestion_info.business_location_id = business_location_id
+# # else:
+# #     suggestion_info.business_context.business_name = business_name
+# suggestion_info.business_context.business_name = business_name
+
+# # Add a schedule detailing which days of the week the business is open.
+# # This schedule describes a schedule in which the business is open on
+# # Mondays from 9am to 5pm.
+# ad_schedule_info = client.get_type("AdScheduleInfo")
+# # Set the day of this schedule as Monday.
+# ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.MONDAY
+# # Set the start hour to 9am.
+# ad_schedule_info.start_hour = 9
+# # Set the end hour to 5pm.
+# ad_schedule_info.end_hour = 17
+# # Set the start and end minute of zero, for example: 9:00 and 5:00.
+# zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+# ad_schedule_info.start_minute = zero_minute_of_hour
+# ad_schedule_info.end_minute = zero_minute_of_hour
+# suggestion_info.ad_schedules.append(ad_schedule_info)
+
 # print('suggestion_info:')
 # print(suggestion_info)
 
-# Set either of the business_location_id or business_name, depending on
-# whichever is provided.
-# if business_location_id:
-#     suggestion_info.business_location_id = business_location_id
-# else:
-#     suggestion_info.business_context.business_name = business_name
-suggestion_info.business_context.business_name = business_name
+# # step 2: get ad suggestion
+# sc_suggest_service = client.get_service("SmartCampaignSuggestService")
+# request = client.get_type("SuggestSmartCampaignAdRequest")
+# request.customer_id = customer_id
 
-# Add a schedule detailing which days of the week the business is open.
-# This schedule describes a schedule in which the business is open on
-# Mondays from 9am to 5pm.
-ad_schedule_info = client.get_type("AdScheduleInfo")
-# Set the day of this schedule as Monday.
-ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.MONDAY
-# Set the start hour to 9am.
-ad_schedule_info.start_hour = 9
-# Set the end hour to 5pm.
-ad_schedule_info.end_hour = 17
-# Set the start and end minute of zero, for example: 9:00 and 5:00.
-zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
-ad_schedule_info.start_minute = zero_minute_of_hour
-ad_schedule_info.end_minute = zero_minute_of_hour
-suggestion_info.ad_schedules.append(ad_schedule_info)
+# # Unlike the SuggestSmartCampaignBudgetOptions method, it's only possible
+# # to use suggestion_info to retrieve ad creative suggestions.
+# request.suggestion_info = suggestion_info
 
-print('suggestion_info:')
-print(suggestion_info)
+# # Issue a request to retrieve ad creative suggestions.
+# response = sc_suggest_service.suggest_smart_campaign_ad(request=request)
+# print('response:')
+# print(response)
 
-# step 2: get ad suggestion
-sc_suggest_service = client.get_service("SmartCampaignSuggestService")
-request = client.get_type("SuggestSmartCampaignAdRequest")
-request.customer_id = customer_id
+# # The SmartCampaignAdInfo object in the response contains a list of up to
+# # three headlines and two descriptions. Note that some of the suggestions
+# # may have empty strings as text. Before setting these on the ad you should
+# # review them and filter out any empty values.
+# ad_suggestions = response.ad_info
+# print('ad_suggestions:')
+# print(ad_suggestions)
 
-# Unlike the SuggestSmartCampaignBudgetOptions method, it's only possible
-# to use suggestion_info to retrieve ad creative suggestions.
-request.suggestion_info = suggestion_info
+# print("The following headlines were suggested:")
+# for headline in ad_suggestions.headlines:
+#     print(f"\t{headline.text or '<None>'}")
 
-# Issue a request to retrieve ad creative suggestions.
-response = sc_suggest_service.suggest_smart_campaign_ad(request=request)
-print('response:')
-print(response)
+# print("And the following descriptions were suggested:")
+# for description in ad_suggestions.descriptions:
+#     print(f"\t{description.text or '<None>'}")
 
-# The SmartCampaignAdInfo object in the response contains a list of up to
-# three headlines and two descriptions. Note that some of the suggestions
-# may have empty strings as text. Before setting these on the ad you should
-# review them and filter out any empty values.
-ad_suggestions = response.ad_info
-print('ad_suggestions:')
-print(ad_suggestions)
-
-print("The following headlines were suggested:")
-for headline in ad_suggestions.headlines:
-    print(f"\t{headline.text or '<None>'}")
-
-print("And the following descriptions were suggested:")
-for description in ad_suggestions.descriptions:
-    print(f"\t{description.text or '<None>'}")
-
-print(ad_suggestions)
+# print(ad_suggestions)
 
 '''
 Edit keyword themes - PARCIALLY OK
@@ -351,172 +351,172 @@ You will get the 500 internal server error if you try to query
 campaign_criterion.keyword_theme.free_form_keyword_theme
 Parameters needed: credentials, customer_id, campaign_id, new_display_name
 '''
-# customer_id = str(2916870939) # billing set up      | account created via ui
-# campaign_id = str(14652304508)
+customer_id = str(2916870939) # billing set up      | account created via ui
+campaign_id = str(14652304508)
 
-# # Step 1: get the resource_name and display_name of the current keyword themes
-# ga_service = client.get_service("GoogleAdsService")
+# Step 1: get the resource_name and display_name of the current keyword themes
+ga_service = client.get_service("GoogleAdsService")
 
-# # Step 1.1: fetch the resource name list of keyword_theme_constant
-# query = (f'''
-# SELECT campaign_criterion.type, campaign_criterion.status, 
-# campaign_criterion.criterion_id, campaign_criterion.keyword_theme.keyword_theme_constant 
-# FROM campaign_criterion 
-# WHERE campaign_criterion.type = 'KEYWORD_THEME'
-# AND campaign.id = {campaign_id}
-# ''')
-# response = ga_service.search_stream(customer_id=customer_id, query=query)
+# Step 1.1: fetch the resource name list of keyword_theme_constant
+query = (f'''
+SELECT campaign_criterion.type, campaign_criterion.status, 
+campaign_criterion.criterion_id, campaign_criterion.keyword_theme.keyword_theme_constant 
+FROM campaign_criterion 
+WHERE campaign_criterion.type = 'KEYWORD_THEME'
+AND campaign.id = {campaign_id}
+''')
+response = ga_service.search_stream(customer_id=customer_id, query=query)
 
-# keyword_theme_constant_list = []
-# campaign_criterion_id_list = []
-# for batch in response:
-#     for row in batch.results:
-#         if row.campaign_criterion.keyword_theme.keyword_theme_constant:
-#             keyword_theme_constant_list.append(
-#                 row.campaign_criterion.keyword_theme.keyword_theme_constant
-#             )
-#             campaign_criterion_id_list.append(
-#                 row.campaign_criterion.criterion_id
-#             )
+keyword_theme_constant_list = []
+campaign_criterion_id_list = []
+for batch in response:
+    for row in batch.results:
+        if row.campaign_criterion.keyword_theme.keyword_theme_constant:
+            keyword_theme_constant_list.append(
+                row.campaign_criterion.keyword_theme.keyword_theme_constant
+            )
+            campaign_criterion_id_list.append(
+                row.campaign_criterion.criterion_id
+            )
 
-# print("keyword_theme_constant_list:")
-# print(keyword_theme_constant_list)
+print("keyword_theme_constant_list:")
+print(keyword_theme_constant_list)
 
-# # Step 1.2: fetch the attributes of keyword_theme_constant based on resource name
-# keyword_theme_display_name_list = []
-# for i in keyword_theme_constant_list:
-#     query = (f'''
-#     SELECT keyword_theme_constant.resource_name, 
-#     keyword_theme_constant.display_name, 
-#     keyword_theme_constant.country_code 
-#     FROM keyword_theme_constant 
-#     WHERE keyword_theme_constant.resource_name = '{i}'
-#     ''')
-#     try:
-#         response = ga_service.search_stream(customer_id=customer_id, query=query)
-#         for batch in response:
-#             for row in batch.results:
-#                 keyword_theme_display_name_list.append(row.keyword_theme_constant.display_name)
-#     except:
-#         None
+# Step 1.2: fetch the attributes of keyword_theme_constant based on resource name
+keyword_theme_display_name_list = []
+for i in keyword_theme_constant_list:
+    query = (f'''
+    SELECT keyword_theme_constant.resource_name, 
+    keyword_theme_constant.display_name, 
+    keyword_theme_constant.country_code 
+    FROM keyword_theme_constant 
+    WHERE keyword_theme_constant.resource_name = '{i}'
+    ''')
+    try:
+        response = ga_service.search_stream(customer_id=customer_id, query=query)
+        for batch in response:
+            for row in batch.results:
+                keyword_theme_display_name_list.append(row.keyword_theme_constant.display_name)
+    except:
+        None
 
-# print("keyword_theme_display_name_list:")
-# print(keyword_theme_display_name_list)
+print("keyword_theme_display_name_list:")
+print(keyword_theme_display_name_list)
 
-# # Step 2.1: get the resource_name of the keyword themes selected by the user
-# # in my app, I will do this with a lookup into the model that stores the keyword themes
-# # using the display_name
-# # for testing, we are going to already populate the object that contains the resource names
+# Step 2.1: get the resource_name of the keyword themes selected by the user
+# in my app, I will do this with a lookup into the model that stores the keyword themes
+# using the display_name
+# for testing, we are going to already populate the object that contains the resource names
 
-# new_kt_constant_list = [
-#     'keywordThemeConstants/154114~119103', 
-#     'keywordThemeConstants/154114~120598', 
-#     'keywordThemeConstants/154114~120652',
-#     'keywordThemeConstants/4646862~0'
-# ]
-# # we are eliminating 'keywordThemeConstants/3200762~0'
-# # and adding 'keywordThemeConstants/4646862~0'
+new_kt_constant_list = [
+    'keywordThemeConstants/154114~119103', 
+    'keywordThemeConstants/154114~120598', 
+    'keywordThemeConstants/154114~120652',
+    'keywordThemeConstants/4646862~0'
+]
+# we are eliminating 'keywordThemeConstants/3200762~0'
+# and adding 'keywordThemeConstants/4646862~0'
 
-# # Step 2.2: create a list of keyword themes to remove and another list
-# # of keyword themes to add to the campaign
+# Step 2.2: create a list of keyword themes to remove and another list
+# of keyword themes to add to the campaign
 
-# kw_to_remove = []
-# kw_to_remove_index = []
-# kw_to_add = []
+kw_to_remove = []
+kw_to_remove_index = []
+kw_to_add = []
 
-# for kw in keyword_theme_constant_list:
-#     if kw not in new_kt_constant_list:
-#         kw_to_remove.append(kw)
-#         # get the index to use it later
-#         kw_to_remove_index.append(keyword_theme_constant_list.index(kw))
+for kw in keyword_theme_constant_list:
+    if kw not in new_kt_constant_list:
+        kw_to_remove.append(kw)
+        # get the index to use it later
+        kw_to_remove_index.append(keyword_theme_constant_list.index(kw))
 
-# for kw in new_kt_constant_list:
-#     if kw not in keyword_theme_constant_list:
-#         kw_to_add.append(kw)
+for kw in new_kt_constant_list:
+    if kw not in keyword_theme_constant_list:
+        kw_to_add.append(kw)
 
-# print("kw_to_remove:")
-# print(kw_to_remove)
-# print("kw_to_add:")
-# print(kw_to_add)
+print("kw_to_remove:")
+print(kw_to_remove)
+print("kw_to_add:")
+print(kw_to_add)
 
-# # Step 2.3: get the KeywordThemeInfo type to set keyword themes as the api needs
-# # kw_info_to_remove = []
-# # for kw in kw_to_remove:
-# #     kw_info = client.get_type("KeywordThemeInfo")
-# #     kw_info.keyword_theme_constant = kw
-# #     kw_info_to_remove.append(kw_info)
-
-# kw_info_to_add = []
-# for kw in kw_to_add:
+# Step 2.3: get the KeywordThemeInfo type to set keyword themes as the api needs
+# kw_info_to_remove = []
+# for kw in kw_to_remove:
 #     kw_info = client.get_type("KeywordThemeInfo")
 #     kw_info.keyword_theme_constant = kw
-#     kw_info_to_add.append(kw_info)
+#     kw_info_to_remove.append(kw_info)
 
-# # print("kw_info_to_remove:")
-# # print(kw_info_to_remove)
-# print("kw_info_to_add:")
-# print(kw_info_to_add)
+kw_info_to_add = []
+for kw in kw_to_add:
+    kw_info = client.get_type("KeywordThemeInfo")
+    kw_info.keyword_theme_constant = kw
+    kw_info_to_add.append(kw_info)
 
-# # Step 3: create the remove operation to 
-# # remove the kw themes of the campaign
-# # Important: update method does not work, so you will have use remove and create 
-# # to edit kw themes of a campaign
+# print("kw_info_to_remove:")
+# print(kw_info_to_remove)
+print("kw_info_to_add:")
+print(kw_info_to_add)
 
-# # we are going to append all mutate operations under operations
-# operations = []
+# Step 3: create the remove operation to 
+# remove the kw themes of the campaign
+# Important: update method does not work, so you will have use remove and create 
+# to edit kw themes of a campaign
 
-# # get the campaign_criterion_id of those that we need to remove
-# campaign_criterion_id_to_remove = []
-# for i in kw_to_remove_index:
-#     campaign_criterion_id_to_remove.append(campaign_criterion_id_list[i])
+# we are going to append all mutate operations under operations
+operations = []
 
-# # create operation to remove them
-# campaign_criterion_service = client.get_service("CampaignCriterionService")
-# for i in campaign_criterion_id_to_remove:
-#     # get the resource name
-#     # that will be in this form: customers/{customer_id}/campaignCriteria/{campaign_id}~{criterion_id}
-#     campaign_criterion_resource_name = campaign_criterion_service.campaign_criterion_path(
-#     customer_id, campaign_id, i
-#     )
-#     # start mutate operation to remove
-#     mutate_operation = client.get_type("MutateOperation")
-#     campaign_criterion_operation = mutate_operation.campaign_criterion_operation
-#     campaign_criterion_operation.remove = campaign_criterion_resource_name
-#     operations.append(campaign_criterion_operation)
+# get the campaign_criterion_id of those that we need to remove
+campaign_criterion_id_to_remove = []
+for i in kw_to_remove_index:
+    campaign_criterion_id_to_remove.append(campaign_criterion_id_list[i])
 
-# # Step 4: create the create operation to
-# # add the kw themes to the campaign
-# for kw in kw_info_to_add:
-#     mutate_operation = client.get_type("MutateOperation")
-#     campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+# create operation to remove them
+campaign_criterion_service = client.get_service("CampaignCriterionService")
+for i in campaign_criterion_id_to_remove:
+    # get the resource name
+    # that will be in this form: customers/{customer_id}/campaignCriteria/{campaign_id}~{criterion_id}
+    campaign_criterion_resource_name = campaign_criterion_service.campaign_criterion_path(
+    customer_id, campaign_id, i
+    )
+    # start mutate operation to remove
+    mutate_operation = client.get_type("MutateOperation")
+    campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+    campaign_criterion_operation.remove = campaign_criterion_resource_name
+    operations.append(campaign_criterion_operation)
 
-#     campaign_criterion = campaign_criterion_operation.create
+# Step 4: create the create operation to
+# add the kw themes to the campaign
+for kw in kw_info_to_add:
+    mutate_operation = client.get_type("MutateOperation")
+    campaign_criterion_operation = mutate_operation.campaign_criterion_operation
 
-#     # Set the campaign
-#     campaign_service = client.get_service("CampaignService")
-#     campaign_criterion.campaign = campaign_service.campaign_path(
-#         customer_id, campaign_id
-#     )
-#     # Set the criterion type to KEYWORD_THEME.
-#     campaign_criterion.type_ = client.enums.CriterionTypeEnum.KEYWORD_THEME
-#     # Set the keyword theme to the given KeywordThemeInfo.
-#     campaign_criterion.keyword_theme = kw
-#     operations.append(campaign_criterion_operation)
+    campaign_criterion = campaign_criterion_operation.create
 
-# print("operations to send as a mutate request:")
-# print(operations)
+    # Set the campaign
+    campaign_service = client.get_service("CampaignService")
+    campaign_criterion.campaign = campaign_service.campaign_path(
+        customer_id, campaign_id
+    )
+    # Set the criterion type to KEYWORD_THEME.
+    campaign_criterion.type_ = client.enums.CriterionTypeEnum.KEYWORD_THEME
+    # Set the keyword theme to the given KeywordThemeInfo.
+    campaign_criterion.keyword_theme = kw
+    operations.append(campaign_criterion_operation)
 
-# # Step 5: send the mutate request
-# response = campaign_criterion_service.mutate_campaign_criteria(
-#     customer_id=customer_id,
-#     operations=[ 
-#         # Expand the list of campaign criterion operations into the list of
-#         # other mutate operations
-#         *operations,
-#     ],
-# )
-# print("response:")
-# print(response)
+print("operations to send as a mutate request:")
+print(operations)
+
+# Step 5: send the mutate request
+response = campaign_criterion_service.mutate_campaign_criteria(
+    customer_id=customer_id,
+    operations=[ 
+        # Expand the list of campaign criterion operations into the list of
+        # other mutate operations
+        *operations,
+    ],
+)
+print("response:")
+print(response)
 
 '''
 Edit geo location targeting - OK 

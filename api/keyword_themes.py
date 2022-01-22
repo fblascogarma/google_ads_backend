@@ -137,6 +137,8 @@ def get_keyword_themes_suggestions(
 
             display_name = i.display_name
             # send only the display_name to the frontend
+            # and in title case (fist letter of every word in upper case)
+            display_name = display_name.title()
             recommendations.append(display_name)
             resource_name = i.resource_name
             # save display_name and resource_name in model
@@ -200,6 +202,8 @@ def get_keyword_themes_suggestions(
 
             display_name = i.display_name
             # send only the display_name to the frontend
+            # and in title case (fist letter of every word in upper case)
+            display_name = display_name.title()
             recommendations_older_service.append(display_name)
             resource_name = i.resource_name
             # save display_name and resource_name in model

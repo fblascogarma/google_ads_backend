@@ -266,3 +266,18 @@ class EditAdCreative(models.Model):
             self.new_desc_1,
             self.new_desc_2,
             )
+
+# Model to edit keyword themes
+class EditKeywordThemes(models.Model):                   
+    refreshToken = models.CharField(max_length=500, blank=True)
+    customer_id = models.CharField(max_length=500)
+    campaign_id = models.CharField(max_length=500)
+    display_name = models.TextField()
+
+    def __str__(self): 
+        return (
+            self.refreshToken, 
+            self.customer_id, 
+            self.campaign_id, 
+            self.display_name, 
+            )

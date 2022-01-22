@@ -7,6 +7,9 @@ from google.ads.googleads.errors import GoogleAdsException
 
 from google.api_core import protobuf_helpers
 
+from .models import KeywordThemesRecommendations
+from .serializers import KeywordThemesRecommendationsSerializer
+
 def sc_settings(refresh_token, customer_id, campaign_id):
     '''
     Get the current settings of the campaign to show to the user
@@ -217,12 +220,16 @@ def sc_settings(refresh_token, customer_id, campaign_id):
             response = ga_service.search_stream(customer_id=customer_id, query=query)
             for batch in response:
                 for row in batch.results:
-                    keyword_theme_display_name_list.append(row.keyword_theme_constant.display_name)
+                    keyword_theme_display_name_list.append(
+                        row.keyword_theme_constant.display_name.title()
+                        )
         except:
             None
 
+    
     print("keyword_theme_display_name_list:")
     print(keyword_theme_display_name_list)
+
     # eliminate duplicates and add unique values only
     data["keyword_themes"] = list(dict.fromkeys(keyword_theme_display_name_list))
 
@@ -818,18 +825,257 @@ def edit_ad(
     print("new_ad_creative:")
     print(new_ad_creative)
     return new_ad_creative
-    # new_headline_1_user = ad_group_ad_text_ad_headlines[0].text
-    # new_headline_2_user = ad_group_ad_text_ad_headlines[1].text
-    # new_headline_3_user = ad_group_ad_text_ad_headlines[2].text
-    # print('new_headline_1_user:')
-    # print(new_headline_1_user)
-    # print('new_headline_2_user:')
-    # print(new_headline_2_user)
-    # print('new_headline_3_user:')
-    # print(new_headline_3_user)
-    # new_desc_1_user = ad_group_ad_text_ad_descriptions[0].text
-    # new_desc_2_user = ad_group_ad_text_ad_descriptions[1].text
-    # print('new_desc_1_user:')
-    # print(new_desc_1_user)
-    # print('new_desc_2_user:')
-    # print(new_desc_2_user)
+   
+def edit_keyword_themes(
+    refresh_token, 
+    customer_id, 
+    campaign_id, 
+    new_keywords_list
+    ):
+    '''
+    Edit keyword themes - PARCIALLY OK
+    Current bug doesn't let you query the keyword_themes (500 Internal error encountered).
+    There is a workaround using the resource_name and fetching the data in two steps,
+    but this doesn't solve for free_form_keyword_themes because they do not have
+    resource_names.
+    You will get the 500 internal server error if you try to query
+    campaign_criterion.keyword_theme.free_form_keyword_theme
+    '''
+    # Configurations
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+    GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+
+    # Configure using dict (the refresh token will be a dynamic value)
+    credentials = {
+    "developer_token": GOOGLE_DEVELOPER_TOKEN,
+    "refresh_token": refresh_token,
+    "client_id": GOOGLE_CLIENT_ID,
+    "client_secret": GOOGLE_CLIENT_SECRET,
+    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+    "linked_customer_id": customer_id,
+    "use_proto_plus": True}
+
+    client = GoogleAdsClient.load_from_dict(credentials)
+
+    '''
+    Step 1 - Get the resource names and display names of the current keyword themes
+    '''
+    ga_service = client.get_service("GoogleAdsService")
+
+    # Step 1.1: fetch the resource name list of keyword_theme_constant
+    query = (f'''
+    SELECT campaign_criterion.type, campaign_criterion.status, 
+    campaign_criterion.criterion_id, campaign_criterion.keyword_theme.keyword_theme_constant 
+    FROM campaign_criterion 
+    WHERE campaign_criterion.type = 'KEYWORD_THEME'
+    AND campaign.id = {campaign_id}
+    ''')
+    response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+    keyword_theme_constant_list = []
+    campaign_criterion_id_list = []
+    for batch in response:
+        for row in batch.results:
+            if row.campaign_criterion.keyword_theme.keyword_theme_constant:
+                keyword_theme_constant_list.append(
+                    row.campaign_criterion.keyword_theme.keyword_theme_constant
+                )
+                campaign_criterion_id_list.append(
+                    row.campaign_criterion.criterion_id
+                )
+
+    print("keyword_theme_constant_list:")
+    print(keyword_theme_constant_list)
+
+    # Step 1.2: fetch the attributes of keyword_theme_constant based on resource name
+    keyword_theme_display_name_list = []
+    for i in keyword_theme_constant_list:
+        query = (f'''
+        SELECT keyword_theme_constant.resource_name, 
+        keyword_theme_constant.display_name, 
+        keyword_theme_constant.country_code 
+        FROM keyword_theme_constant 
+        WHERE keyword_theme_constant.resource_name = '{i}'
+        ''')
+        try:
+            response = ga_service.search_stream(customer_id=customer_id, query=query)
+            for batch in response:
+                for row in batch.results:
+                    keyword_theme_display_name_list.append(row.keyword_theme_constant.display_name)
+        except:
+            None
+
+    print("keyword_theme_display_name_list:")
+    print(keyword_theme_display_name_list)
+
+    '''
+    Step 2 - Get the resource names of the new list of keyword themes 
+    We are using this methodology as a workaround to the current bug in Google
+    '''
+    # use the display_name of list of new keyword themes 
+    # to lookup for the keyword_theme_constant
+    # in the KeywordThemesRecommendations model
+    new_kt_constant_list = []
+    print("new_keywords_list:")
+    print(new_keywords_list)
+    for display_name in new_keywords_list:
+        try:
+            # get the keyword_theme_constant
+            kt_constant = KeywordThemesRecommendations.objects.get(display_name=display_name).resource_name
+            # add it to the list
+            new_kt_constant_list.append(kt_constant)
+        except KeywordThemesRecommendations.DoesNotExist:
+            print(f"{display_name} not found in model.")
+
+    print("new_kt_constant_list:")
+    print(new_kt_constant_list)
+    ''''
+    Step 3 - Create list of keywords to remove and to add
+    '''
+    kw_to_remove = []       # list of keyword constants to remove from campaign
+    kw_to_remove_index = [] # this is used to identify the campaign_criterion_id
+    kw_to_add = []          # list of keyword constants to add to the campaign
+
+    print("start creating list of keywords to remove")
+    for kw in keyword_theme_constant_list:
+        print("kw:")
+        print(kw)
+        if kw not in new_kt_constant_list:
+            kw_to_remove.append(kw)
+            # get the index to use it later
+            kw_to_remove_index.append(keyword_theme_constant_list.index(kw))
+
+    print("start creating list of keywords to add")
+    for kw in new_kt_constant_list:
+        print("kw:")
+        print(kw)
+        if kw not in keyword_theme_constant_list:
+            kw_info = client.get_type("KeywordThemeInfo")
+            kw_info.keyword_theme_constant = kw
+            kw_to_add.append(kw_info)
+
+    print("kw_to_remove:")
+    print(kw_to_remove)
+    print("kw_to_add:")
+    print(kw_to_add)
+
+    '''
+    Step 4 - Create remove and create operations
+    '''
+    # we are going to append all mutate operations under operations
+    operations = []
+
+    # get the campaign_criterion_id of those that we need to remove
+    campaign_criterion_id_to_remove = []
+    for i in kw_to_remove_index:
+        campaign_criterion_id_to_remove.append(campaign_criterion_id_list[i])
+
+    # create operation to remove them
+    campaign_criterion_service = client.get_service("CampaignCriterionService")
+    for i in campaign_criterion_id_to_remove:
+        # get the resource name
+        # that will be in this form: customers/{customer_id}/campaignCriteria/{campaign_id}~{criterion_id}
+        campaign_criterion_resource_name = campaign_criterion_service.campaign_criterion_path(
+        customer_id, campaign_id, i
+        )
+        # start mutate operation to remove
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+        campaign_criterion_operation.remove = campaign_criterion_resource_name
+        operations.append(campaign_criterion_operation)
+
+    # create operation to add keywords
+    for kw in kw_to_add:
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+        campaign_criterion = campaign_criterion_operation.create
+
+        # Set the campaign
+        campaign_service = client.get_service("CampaignService")
+        campaign_criterion.campaign = campaign_service.campaign_path(
+            customer_id, campaign_id
+        )
+        # Set the criterion type to KEYWORD_THEME.
+        campaign_criterion.type_ = client.enums.CriterionTypeEnum.KEYWORD_THEME
+        # Set the keyword theme to the given KeywordThemeInfo.
+        campaign_criterion.keyword_theme = kw
+        operations.append(campaign_criterion_operation)
+
+    print("operations to send as a mutate request:")
+    print(operations)
+
+    '''
+    Step 5 - Send all mutate requests
+    '''
+    response = campaign_criterion_service.mutate_campaign_criteria(
+        customer_id=customer_id,
+        operations=[ 
+            # Expand the list of campaign criterion operations into the list of
+            # other mutate operations
+            *operations,
+        ],
+    )
+    print("response:")
+    print(response)
+
+    '''
+    Step 6 - Query keyword themes to send to frontend
+    '''
+    # step 1: fetch the resource name list of keyword_theme_constant
+    query = (f'''
+    SELECT campaign_criterion.type, campaign_criterion.status, 
+    campaign_criterion.criterion_id, campaign_criterion.keyword_theme.keyword_theme_constant 
+    FROM campaign_criterion 
+    WHERE campaign_criterion.type = 'KEYWORD_THEME'
+    AND campaign.id = {campaign_id}
+    ''')
+    response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+    keyword_theme_constant_list = []
+    campaign_criterion_id_list = []
+    for batch in response:
+        for row in batch.results:
+            if row.campaign_criterion.keyword_theme.keyword_theme_constant:
+                keyword_theme_constant_list.append(
+                    row.campaign_criterion.keyword_theme.keyword_theme_constant
+                )
+                campaign_criterion_id_list.append(
+                    row.campaign_criterion.criterion_id
+                )
+
+    print("keyword_theme_constant_list:")
+    print(keyword_theme_constant_list)
+    
+    # step 2: fetch the attributes of keyword_theme_constant based on resource name
+    keyword_theme_display_name_list = []
+    for i in keyword_theme_constant_list:
+        query = (f'''
+        SELECT keyword_theme_constant.resource_name, 
+        keyword_theme_constant.display_name, 
+        keyword_theme_constant.country_code 
+        FROM keyword_theme_constant 
+        WHERE keyword_theme_constant.resource_name = '{i}'
+        ''')
+        try:
+            response = ga_service.search_stream(customer_id=customer_id, query=query)
+            for batch in response:
+                for row in batch.results:
+                    keyword_theme_display_name_list.append(
+                        row.keyword_theme_constant.display_name.title()
+                        )
+        except:
+            None
+
+    
+    print("keyword_theme_display_name_list:")
+    print(keyword_theme_display_name_list)
+
+    # eliminate duplicates and add unique values only
+    updated_kw = list(dict.fromkeys(keyword_theme_display_name_list))
+
+    json.dumps(updated_kw)
+
+    return updated_kw
