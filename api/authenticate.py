@@ -27,10 +27,8 @@ def connect():
     client_secrets_path = GOOGLE_CLIENT_SECRET_PATH
     # And also add the scopes (info) you want to retrieve from your users
     scopes = [
-        'https://www.googleapis.com/auth/adwords',
-        'https://www.googleapis.com/auth/userinfo.email',
-        'https://www.googleapis.com/auth/userinfo.profile',
-        'openid']
+        'https://www.googleapis.com/auth/adwords',              # for Google Ads
+        'https://www.googleapis.com/auth/business.manage']      # for Google My Business
     flow = Flow.from_client_secrets_file(client_secrets_path, scopes=scopes)
     flow.redirect_uri = _REDIRECT_URI
 
@@ -63,10 +61,8 @@ def get_token(google_access_code):
     client_secrets_path = GOOGLE_CLIENT_SECRET_PATH
     # And also add the scopes (info) you want to retrieve from your users
     scopes = [
-        'https://www.googleapis.com/auth/adwords',
-        'https://www.googleapis.com/auth/userinfo.email',
-        'https://www.googleapis.com/auth/userinfo.profile',
-        'openid']
+        'https://www.googleapis.com/auth/adwords',              # for Google Ads
+        'https://www.googleapis.com/auth/business.manage']      # for Google My Business
     flow = Flow.from_client_secrets_file(client_secrets_path, scopes=scopes)
     # Specify again the redirect_uri because it's required by Flow
     flow.redirect_uri = _REDIRECT_URI
@@ -76,71 +72,3 @@ def get_token(google_access_code):
     refresh_token = flow.credentials.refresh_token
 
     return refresh_token
-
-def _get_authorization_code(passthrough_val):
-    """Opens a socket to handle a single HTTP request containing auth tokens.
-    Args:
-        passthrough_val: an anti-forgery token used to verify the request
-            received by the socket.
-    Returns:
-        a str access token from the Google Auth service.
-    """
-    # Open a socket at localhost:PORT and listen for a request
-    sock = socket.socket()
-    # sock.bind(('localhost', _PORT))
-    sock.bind(('localhost', 3030))
-    sock.listen(1)
-    connection, address = sock.accept()
-    data = connection.recv(1024)
-    # Parse the raw request to retrieve the URL query parameters.
-    params = _parse_raw_query_params(data)
-
-    try:
-        if not params.get("code"):
-            # If no code is present in the query params then there will be an
-            # error message with more details.
-            error = params.get("error")
-            message = f"Failed to retrieve authorization code. Error: {error}"
-            raise ValueError(message)
-        elif params.get("state") != passthrough_val:
-            message = "State token does not match the expected state."
-            raise ValueError(message)
-        else:
-            message = "Authorization code was successfully retrieved."
-    except ValueError as error:
-        print(error)
-        sys.exit(1)
-    finally:
-        response = (
-            "HTTP/1.1 200 OK\n"
-            "Content-Type: text/html\n\n"
-            f"<b>{message}</b>"
-            "<p>Please check the console output.</p>\n"
-        )
-
-        connection.sendall(response.encode())
-        connection.close()
-
-    return params.get("code")
-
-
-def _parse_raw_query_params(data):
-    """Parses a raw HTTP request to extract its query params as a dict.
-    Note that this logic is likely irrelevant if you're building OAuth logic
-    into a complete web application, where response parsing is handled by a
-    framework.
-    Args:
-        data: raw request data as bytes.
-    Returns:
-        a dict of query parameter key value pairs.
-    """
-    # Decode the request into a utf-8 encoded string
-    decoded = data.decode("utf-8")
-    # Use a regular expression to extract the URL query parameters string
-    match = re.search("GET\s\/\?(.*) ", decoded)
-    params = match.group(1)
-    # Split the parameters to isolate the key/value pairs
-    pairs = [ pair.split("=") for pair in params.split("&") ]
-    # Convert pairs to a dict to make it easy to access the values
-    return { key: val for key, val in pairs }
-

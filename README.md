@@ -40,6 +40,9 @@ There are two files that are ignored so you will not see them here, but I have t
 
 # App Architecture
 
+![app architecture](https://user-images.githubusercontent.com/62343770/151630725-253d241a-6239-405f-9355-cf5dbfd381f9.png)
+
+
 # Installation
 
 Clone this repo and the repo for the [frontend](https://github.com/fblascogarma/google_ads_frontend). To install the packages needed for the frontend, follow the instructions in the README file of that repo.
@@ -76,6 +79,22 @@ Very important are the client id and client secret that tells Google which app p
 
 You can use a YAML file to load your credentials, or you can use a dictionary to use it. First, I use a YAML file to test the API, but when I started building for the app, I used a dictionary. I recommend you store the values of client secret, client id, developer token, and login customer id in environment variables like I did.
 
+Also, enable the APIs you are going to use. To enable APIs for the project, you need to go to APIs & Services > Dashboard, in your GCP project and click on ‘ENABLE APIS AND SERVICES’. Use the search bar to enable the Google Ads API.
+
+### Google My Business
+
+If your users have [Google My Business](https://developers.google.com/my-business/ref_overview) (now called Google Business Profile), it makes sense to also integrate those APIs to your app. To do so, you will need:
+1. Get your project approved for GMB. This is a different approval process that you went through when getting a developer token for the Google Ads API.
+1. Fill out [this form](https://docs.google.com/forms/d/1XTQc-QEjsE7YrgstyJxbFDnwmhUhBFFvpNJBw3VzuuE/viewform). Find more information about this [here](https://developers.google.com/my-business/content/prereqs). **Important**: You will get it approved for a specific project, so if you requested access to the GMB API for one project, and then you want to use it on another project, you need to request access to that one too.  
+1. Go to the project on GCP and enable these two APIs like you did with the Google Ads API:
+    1. My Business Business Information API
+    1. My Business Account Management API
+1. You are going to be able to use those APIs after you get approval from Google. 
+
+Those two API for Google My Business are needed to get the business location id that you can use when creating a Smart Campaign. Check the Campaign Creation section for more information on this.
+
+### Verify your Google Cloud project
+
 In parallel, you will need to verify your app. See [here](https://support.google.com/cloud/answer/7454865#verification) and [here](https://support.google.com/cloud/answer/9110914?hl=en) for helpful documentation. You can start this now or later on. It can take several weeks. The Cloud team will send you emails and you should try to answer quickly so they don’t block the process.
 
 ## Step 2 - Install client library
@@ -110,6 +129,10 @@ OAuth Library:
 
 > python -m pip install oauthlib==3.1.1
 
+Google API Client Discovery
+
+> python -m pip install google-api-python-client==2.36.0
+
 ## Step 3 - Credentials configuration
 
 When the installation is complete, you need to create the YAML file we talked about that contains the necessary authentication information needed to make requests. This will help you to create your first API call or if you regularly use just one set of credentials, but for your app you will probably do the authentication without using a YAML file with the LoadFromStorage method because you will have many users. 
@@ -139,13 +162,22 @@ Google handles the user authentication, session selection, and user consent. The
 
 The application should store the refresh token for future use and use the access token to access a Google API. Once the access token expires, the application uses the refresh token to obtain a new one.
 
+![oauth flow](https://user-images.githubusercontent.com/62343770/151631414-53d70b03-14db-4dfa-bde4-81b559ad6b43.png)
+
+
 To learn more about the expiration of refresh tokens, go [here](https://developers.google.com/identity/protocols/oauth2#expiration).
 
 To generate the refresh token, create a temporary [authenticate_in_web_application.py](https://github.com/googleads/google-ads-python/blob/master/examples/authentication/authenticate_in_web_application.py) file and make sure that the redirect URI is one that you have authorized in your GCP project. 
 
 Make sure that the URL you are using in your code to redirect users is included in the authorized redirect URIs section in the GCP project. See image below.
 
+<img width="880" alt="authorized_redirect_uris" src="https://user-images.githubusercontent.com/62343770/151631292-3aadfd3a-1a71-446a-9776-36e5b4ed6a80.png">
+
+
 Also, make sure that you include the gmail account in the list of authorized test users in your GCP project. See image below.
+
+<img width="706" alt="Authorize_test_users" src="https://user-images.githubusercontent.com/62343770/151631839-6c6e4605-84b9-4c21-8a50-4599d57897ac.png">
+
 
 Go to the folder where you have that authenticate_in_web_application.py file and type
 

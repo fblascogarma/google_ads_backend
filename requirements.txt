@@ -2,3 +2,4 @@ Django==3.2.4
 django-cors-headers==3.7.0
 djangorestframework==3.12.4
 google-ads==14.1.0
+google-api-python-client==2.36.0

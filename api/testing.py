@@ -34,24 +34,105 @@ customer_id = str(2916870939) # billing set up      | account created via ui
 #     ]                                                   # for suggestion_info
 
 
-# Configurations
+# # Configurations
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
-GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
-GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+# GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+# GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+# GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
 
-# Configure using dict (the refresh token will be a dynamic value)
+# # Configure using dict (the refresh token will be a dynamic value)
+# credentials = {
+# "developer_token": GOOGLE_DEVELOPER_TOKEN,
+# "refresh_token": GOOGLE_REFRESH_TOKEN,
+# "client_id": GOOGLE_CLIENT_ID,
+# "client_secret": GOOGLE_CLIENT_SECRET,
+# # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+# "linked_customer_id": customer_id,
+# "use_proto_plus": True}
+
+# client = GoogleAdsClient.load_from_dict(credentials)
+
+'''
+Get business_location_id from GMB
+'''
+# you need to install google-api-python-client to use googleapiclient.discovery
+from googleapiclient.discovery import build
+import google.oauth2.credentials
+
+# documentation that explains the fields of the credentials
+# https://google-auth.readthedocs.io/en/stable/reference/google.oauth2.credentials.html
+refresh_token = "1//06ByTYlm2uCkJCgYIARAAGAYSNwF-L9IrBvYYkTW8ZRzIW7Nt-KOFyTGP2nGupJJB4pE6PdbI2nzmtVGt_HKLK3iTWp2LErxaAj0"
 credentials = {
-"developer_token": GOOGLE_DEVELOPER_TOKEN,
-"refresh_token": GOOGLE_REFRESH_TOKEN,
-"client_id": GOOGLE_CLIENT_ID,
-"client_secret": GOOGLE_CLIENT_SECRET,
-# "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-"linked_customer_id": customer_id,
-"use_proto_plus": True}
+    'refresh_token': refresh_token,
+    'client_id': GOOGLE_CLIENT_ID,
+    'client_secret': GOOGLE_CLIENT_SECRET,
+    'token': None,
+    'token_uri': "https://oauth2.googleapis.com/token"
+}
 
-client = GoogleAdsClient.load_from_dict(credentials)
+# build the credentials object
+google_credentials = google.oauth2.credentials.Credentials(**credentials)
+
+# first you will call the Account Managment API to get the account resource name
+# for the Account Managment API
+service = build(
+    'mybusinessaccountmanagement',      # serviceName
+    'v1',                               # version
+    credentials=google_credentials      # user's credentials
+    )
+request = service.accounts().list()
+
+# Execute the request and print the result.
+result = request.execute()
+print("result:")
+print(result)
+account = result['accounts'][0]['name']
+print("account:")
+print(account)
+
+# then you need to use the Business Information API 
+# to get the location id
+
+# for the Business Information API
+service = build(
+    'mybusinessbusinessinformation',    # serviceName
+    'v1',                               # version
+    credentials=google_credentials      # user's credentials
+    )
+
+'''
+Step 3 - Send the request
+'''
+# Create the request
+# https://developers.google.com/my-business/reference/businessinformation/rest/v1/accounts.locations/list
+# here are the fields you can get 
+# https://developers.google.com/my-business/reference/businessinformation/rest/v1/accounts.locations#Location
+fields_we_want = 'name'
+request = service.accounts().locations().list(
+    parent=account,
+    readMask=fields_we_want
+    )
+
+# Execute the request and print the result.
+result = request.execute()
+print("result:")
+print(result)
+
+# get the business_location_id
+business_location_id = result['locations'][0]['name'].split('/')[1]
+print("business_location_id:")
+print(business_location_id)
+'''
+result:
+{'accounts': [{'name': 'accounts/100908889345015231702', 'accountName': 'Francisco Blasco Garma', 'type': 'PERSONAL', 'verificationState': 'UNVERIFIED', 'vettedState': 'NOT_VETTED'}]}
+account:
+accounts/100908889345015231702
+result:
+{'locations': [{'name': 'locations/11684591100009545305'}]}
+business_location_id:
+11684591100009545305
+'''
 
 '''
 Search terms report - OK
@@ -351,172 +432,172 @@ You will get the 500 internal server error if you try to query
 campaign_criterion.keyword_theme.free_form_keyword_theme
 Parameters needed: credentials, customer_id, campaign_id, new_display_name
 '''
-customer_id = str(2916870939) # billing set up      | account created via ui
-campaign_id = str(14652304508)
+# customer_id = str(2916870939) # billing set up      | account created via ui
+# campaign_id = str(14652304508)
 
-# Step 1: get the resource_name and display_name of the current keyword themes
-ga_service = client.get_service("GoogleAdsService")
+# # Step 1: get the resource_name and display_name of the current keyword themes
+# ga_service = client.get_service("GoogleAdsService")
 
-# Step 1.1: fetch the resource name list of keyword_theme_constant
-query = (f'''
-SELECT campaign_criterion.type, campaign_criterion.status, 
-campaign_criterion.criterion_id, campaign_criterion.keyword_theme.keyword_theme_constant 
-FROM campaign_criterion 
-WHERE campaign_criterion.type = 'KEYWORD_THEME'
-AND campaign.id = {campaign_id}
-''')
-response = ga_service.search_stream(customer_id=customer_id, query=query)
+# # Step 1.1: fetch the resource name list of keyword_theme_constant
+# query = (f'''
+# SELECT campaign_criterion.type, campaign_criterion.status, 
+# campaign_criterion.criterion_id, campaign_criterion.keyword_theme.keyword_theme_constant 
+# FROM campaign_criterion 
+# WHERE campaign_criterion.type = 'KEYWORD_THEME'
+# AND campaign.id = {campaign_id}
+# ''')
+# response = ga_service.search_stream(customer_id=customer_id, query=query)
 
-keyword_theme_constant_list = []
-campaign_criterion_id_list = []
-for batch in response:
-    for row in batch.results:
-        if row.campaign_criterion.keyword_theme.keyword_theme_constant:
-            keyword_theme_constant_list.append(
-                row.campaign_criterion.keyword_theme.keyword_theme_constant
-            )
-            campaign_criterion_id_list.append(
-                row.campaign_criterion.criterion_id
-            )
+# keyword_theme_constant_list = []
+# campaign_criterion_id_list = []
+# for batch in response:
+#     for row in batch.results:
+#         if row.campaign_criterion.keyword_theme.keyword_theme_constant:
+#             keyword_theme_constant_list.append(
+#                 row.campaign_criterion.keyword_theme.keyword_theme_constant
+#             )
+#             campaign_criterion_id_list.append(
+#                 row.campaign_criterion.criterion_id
+#             )
 
-print("keyword_theme_constant_list:")
-print(keyword_theme_constant_list)
+# print("keyword_theme_constant_list:")
+# print(keyword_theme_constant_list)
 
-# Step 1.2: fetch the attributes of keyword_theme_constant based on resource name
-keyword_theme_display_name_list = []
-for i in keyword_theme_constant_list:
-    query = (f'''
-    SELECT keyword_theme_constant.resource_name, 
-    keyword_theme_constant.display_name, 
-    keyword_theme_constant.country_code 
-    FROM keyword_theme_constant 
-    WHERE keyword_theme_constant.resource_name = '{i}'
-    ''')
-    try:
-        response = ga_service.search_stream(customer_id=customer_id, query=query)
-        for batch in response:
-            for row in batch.results:
-                keyword_theme_display_name_list.append(row.keyword_theme_constant.display_name)
-    except:
-        None
+# # Step 1.2: fetch the attributes of keyword_theme_constant based on resource name
+# keyword_theme_display_name_list = []
+# for i in keyword_theme_constant_list:
+#     query = (f'''
+#     SELECT keyword_theme_constant.resource_name, 
+#     keyword_theme_constant.display_name, 
+#     keyword_theme_constant.country_code 
+#     FROM keyword_theme_constant 
+#     WHERE keyword_theme_constant.resource_name = '{i}'
+#     ''')
+#     try:
+#         response = ga_service.search_stream(customer_id=customer_id, query=query)
+#         for batch in response:
+#             for row in batch.results:
+#                 keyword_theme_display_name_list.append(row.keyword_theme_constant.display_name)
+#     except:
+#         None
 
-print("keyword_theme_display_name_list:")
-print(keyword_theme_display_name_list)
+# print("keyword_theme_display_name_list:")
+# print(keyword_theme_display_name_list)
 
-# Step 2.1: get the resource_name of the keyword themes selected by the user
-# in my app, I will do this with a lookup into the model that stores the keyword themes
-# using the display_name
-# for testing, we are going to already populate the object that contains the resource names
+# # Step 2.1: get the resource_name of the keyword themes selected by the user
+# # in my app, I will do this with a lookup into the model that stores the keyword themes
+# # using the display_name
+# # for testing, we are going to already populate the object that contains the resource names
 
-new_kt_constant_list = [
-    'keywordThemeConstants/154114~119103', 
-    'keywordThemeConstants/154114~120598', 
-    'keywordThemeConstants/154114~120652',
-    'keywordThemeConstants/4646862~0'
-]
-# we are eliminating 'keywordThemeConstants/3200762~0'
-# and adding 'keywordThemeConstants/4646862~0'
+# new_kt_constant_list = [
+#     'keywordThemeConstants/154114~119103', 
+#     'keywordThemeConstants/154114~120598', 
+#     'keywordThemeConstants/154114~120652',
+#     'keywordThemeConstants/4646862~0'
+# ]
+# # we are eliminating 'keywordThemeConstants/3200762~0'
+# # and adding 'keywordThemeConstants/4646862~0'
 
-# Step 2.2: create a list of keyword themes to remove and another list
-# of keyword themes to add to the campaign
+# # Step 2.2: create a list of keyword themes to remove and another list
+# # of keyword themes to add to the campaign
 
-kw_to_remove = []
-kw_to_remove_index = []
-kw_to_add = []
+# kw_to_remove = []
+# kw_to_remove_index = []
+# kw_to_add = []
 
-for kw in keyword_theme_constant_list:
-    if kw not in new_kt_constant_list:
-        kw_to_remove.append(kw)
-        # get the index to use it later
-        kw_to_remove_index.append(keyword_theme_constant_list.index(kw))
+# for kw in keyword_theme_constant_list:
+#     if kw not in new_kt_constant_list:
+#         kw_to_remove.append(kw)
+#         # get the index to use it later
+#         kw_to_remove_index.append(keyword_theme_constant_list.index(kw))
 
-for kw in new_kt_constant_list:
-    if kw not in keyword_theme_constant_list:
-        kw_to_add.append(kw)
+# for kw in new_kt_constant_list:
+#     if kw not in keyword_theme_constant_list:
+#         kw_to_add.append(kw)
 
-print("kw_to_remove:")
-print(kw_to_remove)
-print("kw_to_add:")
-print(kw_to_add)
+# print("kw_to_remove:")
+# print(kw_to_remove)
+# print("kw_to_add:")
+# print(kw_to_add)
 
-# Step 2.3: get the KeywordThemeInfo type to set keyword themes as the api needs
-# kw_info_to_remove = []
-# for kw in kw_to_remove:
+# # Step 2.3: get the KeywordThemeInfo type to set keyword themes as the api needs
+# # kw_info_to_remove = []
+# # for kw in kw_to_remove:
+# #     kw_info = client.get_type("KeywordThemeInfo")
+# #     kw_info.keyword_theme_constant = kw
+# #     kw_info_to_remove.append(kw_info)
+
+# kw_info_to_add = []
+# for kw in kw_to_add:
 #     kw_info = client.get_type("KeywordThemeInfo")
 #     kw_info.keyword_theme_constant = kw
-#     kw_info_to_remove.append(kw_info)
+#     kw_info_to_add.append(kw_info)
 
-kw_info_to_add = []
-for kw in kw_to_add:
-    kw_info = client.get_type("KeywordThemeInfo")
-    kw_info.keyword_theme_constant = kw
-    kw_info_to_add.append(kw_info)
+# # print("kw_info_to_remove:")
+# # print(kw_info_to_remove)
+# print("kw_info_to_add:")
+# print(kw_info_to_add)
 
-# print("kw_info_to_remove:")
-# print(kw_info_to_remove)
-print("kw_info_to_add:")
-print(kw_info_to_add)
+# # Step 3: create the remove operation to 
+# # remove the kw themes of the campaign
+# # Important: update method does not work, so you will have use remove and create 
+# # to edit kw themes of a campaign
 
-# Step 3: create the remove operation to 
-# remove the kw themes of the campaign
-# Important: update method does not work, so you will have use remove and create 
-# to edit kw themes of a campaign
+# # we are going to append all mutate operations under operations
+# operations = []
 
-# we are going to append all mutate operations under operations
-operations = []
+# # get the campaign_criterion_id of those that we need to remove
+# campaign_criterion_id_to_remove = []
+# for i in kw_to_remove_index:
+#     campaign_criterion_id_to_remove.append(campaign_criterion_id_list[i])
 
-# get the campaign_criterion_id of those that we need to remove
-campaign_criterion_id_to_remove = []
-for i in kw_to_remove_index:
-    campaign_criterion_id_to_remove.append(campaign_criterion_id_list[i])
+# # create operation to remove them
+# campaign_criterion_service = client.get_service("CampaignCriterionService")
+# for i in campaign_criterion_id_to_remove:
+#     # get the resource name
+#     # that will be in this form: customers/{customer_id}/campaignCriteria/{campaign_id}~{criterion_id}
+#     campaign_criterion_resource_name = campaign_criterion_service.campaign_criterion_path(
+#     customer_id, campaign_id, i
+#     )
+#     # start mutate operation to remove
+#     mutate_operation = client.get_type("MutateOperation")
+#     campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+#     campaign_criterion_operation.remove = campaign_criterion_resource_name
+#     operations.append(campaign_criterion_operation)
 
-# create operation to remove them
-campaign_criterion_service = client.get_service("CampaignCriterionService")
-for i in campaign_criterion_id_to_remove:
-    # get the resource name
-    # that will be in this form: customers/{customer_id}/campaignCriteria/{campaign_id}~{criterion_id}
-    campaign_criterion_resource_name = campaign_criterion_service.campaign_criterion_path(
-    customer_id, campaign_id, i
-    )
-    # start mutate operation to remove
-    mutate_operation = client.get_type("MutateOperation")
-    campaign_criterion_operation = mutate_operation.campaign_criterion_operation
-    campaign_criterion_operation.remove = campaign_criterion_resource_name
-    operations.append(campaign_criterion_operation)
+# # Step 4: create the create operation to
+# # add the kw themes to the campaign
+# for kw in kw_info_to_add:
+#     mutate_operation = client.get_type("MutateOperation")
+#     campaign_criterion_operation = mutate_operation.campaign_criterion_operation
 
-# Step 4: create the create operation to
-# add the kw themes to the campaign
-for kw in kw_info_to_add:
-    mutate_operation = client.get_type("MutateOperation")
-    campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+#     campaign_criterion = campaign_criterion_operation.create
 
-    campaign_criterion = campaign_criterion_operation.create
+#     # Set the campaign
+#     campaign_service = client.get_service("CampaignService")
+#     campaign_criterion.campaign = campaign_service.campaign_path(
+#         customer_id, campaign_id
+#     )
+#     # Set the criterion type to KEYWORD_THEME.
+#     campaign_criterion.type_ = client.enums.CriterionTypeEnum.KEYWORD_THEME
+#     # Set the keyword theme to the given KeywordThemeInfo.
+#     campaign_criterion.keyword_theme = kw
+#     operations.append(campaign_criterion_operation)
 
-    # Set the campaign
-    campaign_service = client.get_service("CampaignService")
-    campaign_criterion.campaign = campaign_service.campaign_path(
-        customer_id, campaign_id
-    )
-    # Set the criterion type to KEYWORD_THEME.
-    campaign_criterion.type_ = client.enums.CriterionTypeEnum.KEYWORD_THEME
-    # Set the keyword theme to the given KeywordThemeInfo.
-    campaign_criterion.keyword_theme = kw
-    operations.append(campaign_criterion_operation)
+# print("operations to send as a mutate request:")
+# print(operations)
 
-print("operations to send as a mutate request:")
-print(operations)
-
-# Step 5: send the mutate request
-response = campaign_criterion_service.mutate_campaign_criteria(
-    customer_id=customer_id,
-    operations=[ 
-        # Expand the list of campaign criterion operations into the list of
-        # other mutate operations
-        *operations,
-    ],
-)
-print("response:")
-print(response)
+# # Step 5: send the mutate request
+# response = campaign_criterion_service.mutate_campaign_criteria(
+#     customer_id=customer_id,
+#     operations=[ 
+#         # Expand the list of campaign criterion operations into the list of
+#         # other mutate operations
+#         *operations,
+#     ],
+# )
+# print("response:")
+# print(response)
 
 '''
 Edit geo location targeting - OK 
