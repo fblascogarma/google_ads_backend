@@ -1,6 +1,7 @@
 import os
 import sys
 from uuid import uuid4
+import ctypes
 
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
@@ -9,15 +10,52 @@ from google.api_core import protobuf_helpers
 
 from .models import KeywordThemesRecommendations
 
+def _convert_business_location_id(business_location_id):
+    """Converts a business location ID to a signed 64 bit integer, if necessary.
+
+    A Business Profile location ID may be outside of the range for a signed
+    64 bit int (>= 2^63), which will cause an error to be raised when it's set
+    to the business_location_id field on a SmartCampaignSuggestionInfo
+    or SmartCampaignSetting instance. If that's the case this method will
+    convert it to a signed 64 bit integer for use in the request.
+
+    The number will only be converted if it's a 64 bit integer and outside of
+    the range for a signed 64 bit integer. If it's greater than 64 bits an error
+    will be raised, and if it's within range for a signed 64 bit integer it
+    will be returned as-is.
+
+    Args:
+        business_location_id: the ID of a Business Profile location.
+
+    Returns:
+        a business location ID as a signed 64 bit integer.
+    """
+    _64_BIT_RANGE_CEILING = 2 ** 64
+    _SIGNED_64_BIT_RANGE_CEILING = 2 ** 63
+    if business_location_id >= _64_BIT_RANGE_CEILING:
+        # If the business location ID is outside of 64 bit range it can't
+        # be converted to a signed 64 bit integer and is invalid.
+        raise ValueError(
+            "The given business_location_id is outside of the range for "
+            "a 64 bit integer."
+        )
+    elif business_location_id >= _SIGNED_64_BIT_RANGE_CEILING:
+        # If the business location ID is 64 bits but outside of the range
+        # of a signed 64 bit integer we convert it to its two's complement
+        # and pass that to the API.
+        return ctypes.c_int64(business_location_id).value
+    else:
+        return business_location_id
+
 
 def create_smart(
     refresh_token, customer_id, display_name, geo_target_names,
     language_code, country_code, selected_budget,
-    phone_number, landing_page, business_name,
+    phone_number, landing_page, 
+    business_name, business_location_id,
     headline_1_user, headline_2_user, headline_3_user,
     desc_1_user, desc_2_user, campaign_name):
     try:
-
         # Configurations
         GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
         GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
@@ -224,11 +262,14 @@ def create_smart(
 
         # It's required that either a business location ID or a business name is
         # added to the SmartCampaignSetting.
-        # if business_location_id:
-        #     smart_campaign_setting.business_location_id = business_location_id
-        # else:
-        #     smart_campaign_setting.business_name = business_name
-        smart_campaign_setting.business_name = business_name
+        if len(business_location_id) > 0:
+            print('setting up business_location_id')
+            business_location_id = _convert_business_location_id(int(business_location_id))
+            smart_campaign_setting.business_location_id = business_location_id
+        else:
+            print('no business_location_id so setting up business_name')
+            smart_campaign_setting.business_name = business_name
+        # smart_campaign_setting.business_name = business_name
 
         # Set the update mask on the operation. This is required since the smart
         # campaign setting is created in an UPDATE operation. Here the update

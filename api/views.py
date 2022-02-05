@@ -47,6 +47,7 @@ from .edit_sc import (
     edit_budget, edit_ad, edit_keyword_themes
     )
 from .get_search_terms_report import search_terms_report
+from .get_gmb import business_profile
 
 
 # Create your views here.
@@ -607,6 +608,11 @@ def create_smart_campaign(request):
             # get the business_name
             business_name = serializer['business_name'].value
 
+            # get the business_location_id
+            business_location_id = serializer['business_location_id'].value
+            print("business_location_id:")
+            print(business_location_id)
+
             # get the headline_1_user
             headline_1_user = serializer['headline_1_user'].value
 
@@ -629,7 +635,8 @@ def create_smart_campaign(request):
             smart_campaign = create_smart(
                 refresh_token, customer_id, display_name, geo_target_names,
                 language_code, country_code, selected_budget,
-                phone_number, landing_page, business_name,
+                phone_number, landing_page, 
+                business_name, business_location_id,
                 headline_1_user, headline_2_user, headline_3_user,
                 desc_1_user, desc_2_user, campaign_name)
             print(smart_campaign)
@@ -1079,6 +1086,24 @@ def edit_keywords(request):
             print(updated_keywords)
 
             response = JsonResponse(updated_keywords, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Get Business Information from Google My Business
+@api_view(['POST'])
+def get_business_info(request):
+    if request.method == 'POST':
+        serializer = RefreshTokenSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            # get the refresh token
+            refresh_token = serializer['refreshToken'].value
+
+            # call the function to get the business info
+            gmb_info = business_profile(refresh_token)
+
+            response = JsonResponse(gmb_info, safe=False)
            
             return response
         return Response(data="bad request")

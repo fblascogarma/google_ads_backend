@@ -108,7 +108,7 @@ Step 3 - Send the request
 # https://developers.google.com/my-business/reference/businessinformation/rest/v1/accounts.locations/list
 # here are the fields you can get 
 # https://developers.google.com/my-business/reference/businessinformation/rest/v1/accounts.locations#Location
-fields_we_want = 'name'
+fields_we_want = 'name,title,websiteUri,languageCode,phoneNumbers'
 request = service.accounts().locations().list(
     parent=account,
     readMask=fields_we_want
@@ -123,6 +123,18 @@ print(result)
 business_location_id = result['locations'][0]['name'].split('/')[1]
 print("business_location_id:")
 print(business_location_id)
+# get the business_name
+business_name = result['locations'][0]['title']
+print("business_name:")
+print(business_name)
+# get the phone_number
+phone_number = result['locations'][0]['phoneNumbers']['primaryPhone']
+print("phone_number:")
+print(phone_number)
+# get the final_url
+final_url = result['locations'][0]['websiteUri']
+print("final_url:")
+print(final_url)
 '''
 result:
 {'accounts': [{'name': 'accounts/100908889345015231702', 'accountName': 'Francisco Blasco Garma', 'type': 'PERSONAL', 'verificationState': 'UNVERIFIED', 'vettedState': 'NOT_VETTED'}]}

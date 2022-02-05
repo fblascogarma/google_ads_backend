@@ -133,7 +133,8 @@ class CreateSmartCampaignSerializer(serializers.ModelSerializer):
         model = CreateSmartCampaign
         fields = [
             'refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names', 
-            'selected_budget', 'phone_number', 'business_name', 'headline_1_user', 'headline_2_user', 'headline_3_user',
+            'selected_budget', 'phone_number', 'business_name', 'business_location_id', 
+            'headline_1_user', 'headline_2_user', 'headline_3_user',
             'desc_1_user', 'desc_2_user', 'campaign_name']
 
 # Serializer for getting campaign settings
