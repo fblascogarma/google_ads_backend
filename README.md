@@ -43,6 +43,8 @@ There are two files that are ignored so you will not see them here, but I have t
 
 # Installation
 
+See [here](https://youtu.be/WvP3vtc_o7Q) a video tutorial on how to set up this web app.
+
 Clone this repo and the repo for the [frontend](https://github.com/fblascogarma/google_ads_frontend). To install the packages needed for the frontend, follow the instructions in the README file of that repo.
 
 Here are the instructions for the backend.
