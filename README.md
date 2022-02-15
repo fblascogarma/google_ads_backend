@@ -1,6 +1,6 @@
-# Build a web app that is integrated with Google Ads (this is the backend)
+# Build a web app that is integrated with Google Ads
 
-This project will teach you how to build a backend for your web app that integrates with Google Ads using Google Ads API. To see the project for the frontend, go [here](https://github.com/fblascogarma/google_ads_frontend).
+This project will teach you how to **build a backend for your web app** that integrates with Google Ads using Google Ads API. To see the project for the frontend, go [here](https://github.com/fblascogarma/google_ads_frontend).
 
 See [here](https://youtu.be/yVFZvJpLVxk) a 15-minute demo of the product you can have by cloning this repo and following the instructions.
 
@@ -11,15 +11,13 @@ If this project helped you, please give it a star, and if you have suggestions, 
 
 # Assumptions & Prerequisites
 
-1) You already have a Google account. If you haven’t, go [here](https://accounts.google.com/signin).
+1. You already have a Google account. If you haven’t, go [here](https://accounts.google.com/signin).
 
-2) You already have a Google Ads Manager account. If you haven’t, go [here](https://ads.google.com/home/tools/manager-accounts/).
+1. You already have a Google Ads Manager account. If you haven’t, go [here](https://ads.google.com/home/tools/manager-accounts/).
 
-3) You already have a basic/standard developer token access. If you haven’t, go [here](https://developers.google.com/google-ads/api/docs/first-call/dev-token). I have the basic access that gives me 15,000 operations / day (15k resources/day) and 1,000 requests / day, which is more than enough for this tutorial.
+1. You already have a basic/standard developer token access. If you haven’t, go [here](https://developers.google.com/google-ads/api/docs/first-call/dev-token). I have the basic access that gives me 15,000 operations / day (15k resources/day) and 1,000 requests / day, which is more than enough for this tutorial.
 
-4) You already have a web app functioning where you can develop this Google Ads solution. If you haven't, use my [backend starter](https://github.com/fblascogarma/backend_starter) and my [frontend starter](https://github.com/fblascogarma/frontend_starter).
-
-5) You know Python, JavaScript, full-stack web development, and APIs.
+1. You know Python, JavaScript, full-stack web development, and APIs.
 
 I’ll use Django (Python framework) for the backend, React (JavaScript framework/library) for the frontend, and Bootstrap for CSS.
 
@@ -49,23 +47,36 @@ Clone this repo and the repo for the [frontend](https://github.com/fblascogarma/
 
 Here are the instructions for the backend.
 
-Run
+1. Install of dependencies.
 
 > pip install -r requirements.txt
 
-to install all the libraries you need for the backend to work properly.
+1. Get a new secret key for the app.
+    1. Go to [MiniWebTool](http://www.miniwebtool.com/django-secret-key-generator/) to generate a secret key for the backend app.
+    1. Go to the settings.py file inside the backend folder.
+    1. Replace the secret key value in line #37 for the secret key generated using the web tool.
+
+1. Make the necessary migrations.
+
+> python manage.py migrate
+
+1. Create a super user to manage the backend.
+
+> python manage.py createsuperuser
+
+1. Start the backend server.
+
+> python manage.py runserver
+
+1. Open the backend app in your browser.
+
+> localhost:8000/admin/
+
+1. You are all set!
 
 # Steps
 
-Check out the [technical guide](https://docs.google.com/document/d/1Tz0NRHokAFjd-6A0KM9KeLnEvt9XFM4l1PfI9MCE6v8/edit?usp=sharing) I wrote that explains every step you need to take. You will see three sections.
-
-Section 1 - Before Starting
-
-Section 2 - Configuration & Installation
-
-Section 3 - Build the Web App
-
-Here I will go over Section 2 - Configuration & Installation.
+You have to create a Google Cloud project and get the necessary credentials to consume Google's APIs.
 
 ## Step 1 - Create a Google Cloud project
 
