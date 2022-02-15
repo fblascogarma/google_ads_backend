@@ -51,28 +51,28 @@ Here are the instructions for the backend.
 
 > pip install -r requirements.txt
 
-1. Get a new secret key for the app.
+2. Get a new secret key for the app.
     1. Go to [MiniWebTool](http://www.miniwebtool.com/django-secret-key-generator/) to generate a secret key for the backend app.
-    1. Go to the settings.py file inside the backend folder.
-    1. Replace the secret key value in line #37 for the secret key generated using the web tool.
+    2. Go to the settings.py file inside the backend folder.
+    3. Replace the secret key value in line #37 for the secret key generated using the web tool.
 
-1. Make the necessary migrations.
+3. Make the necessary migrations.
 
 > python manage.py migrate
 
-1. Create a super user to manage the backend.
+4. Create a super user to manage the backend.
 
 > python manage.py createsuperuser
 
-1. Start the backend server.
+5. Start the backend server.
 
 > python manage.py runserver
 
-1. Open the backend app in your browser.
+6. Open the backend app in your browser.
 
 > localhost:8000/admin/
 
-1. You are all set!
+7. You are all set!
 
 # Steps
 
