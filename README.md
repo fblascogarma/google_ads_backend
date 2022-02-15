@@ -88,7 +88,7 @@ When you have your OAuth credentials, download the JSON file and save it to your
 That file contains information to link your app with your GCP project. 
 Very important are the client id and client secret that tells Google which app project you are using.
 
-You can use a YAML file to load your credentials, or you can use a dictionary to use it. First, I use a YAML file to test the API, but when I started building for the app, I used a dictionary. I recommend you store the values of client secret, client id, developer token, and login customer id in environment variables like I did.
+You can use a YAML file to load your credentials, or you can use a dictionary to use it like I did. I recommend you store the values of client secret, client id, developer token, and login customer id in environment variables like I did.
 
 Also, enable the APIs you are going to use. To enable APIs for the project, you need to go to APIs & Services > Dashboard, in your GCP project and click on ‘ENABLE APIS AND SERVICES’. Use the search bar to enable the Google Ads API.
 
