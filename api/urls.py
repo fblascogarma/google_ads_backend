@@ -36,7 +36,8 @@ from .views import (
     get_ad_creatives,
     edit_ad_creative,
     edit_keywords,
-    get_business_info
+    get_business_info,
+    edit_geo_target
     )
 from rest_framework.routers import DefaultRouter
 
@@ -70,4 +71,5 @@ urlpatterns = [
     path('api/sc-settings/edit-ad-creative/', edit_ad_creative),
     path('api/sc-settings/edit-keywords/', edit_keywords),
     path('api/get-business-info/', get_business_info),
+    path('api/sc-settings/edit-geo-targets/', edit_geo_target),
 ]

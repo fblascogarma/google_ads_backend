@@ -151,11 +151,19 @@ print("final_url:")
 print(final_url)
 '''
 result:
-{'accounts': [{'name': 'accounts/100908889345015231702', 'accountName': 'Francisco Blasco Garma', 'type': 'PERSONAL', 'verificationState': 'UNVERIFIED', 'vettedState': 'NOT_VETTED'}]}
+{'accounts': [{
+    'name': 'accounts/100908889345015231702', 
+    'accountName': 'Francisco Blasco Garma', 
+    'type': 'PERSONAL', 
+    'verificationState': 'UNVERIFIED', 
+    'vettedState': 'NOT_VETTED'
+    }]}
 account:
 accounts/100908889345015231702
 result:
-{'locations': [{'name': 'locations/11684591100009545305'}]}
+{'locations': [{
+    'name': 'locations/11684591100009545305'
+    }]}
 business_location_id:
 11684591100009545305
 '''

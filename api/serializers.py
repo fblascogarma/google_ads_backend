@@ -23,7 +23,7 @@ from .models import (
     CreateSmartCampaign, CampaignSettings,
     CampaignName, EditCampaignBudget,
     SearchTermsReport, EditAdCreative,
-    EditKeywordThemes
+    EditKeywordThemes, EditGeoTargets
     )
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
@@ -179,12 +179,32 @@ class SearchTermsReportSerializer(serializers.ModelSerializer):
 class EditAdCreativeSerializer(serializers.ModelSerializer):
     class Meta:
         model = EditAdCreative
-        fields = ['refreshToken', 'customer_id', 'campaign_id', 
-        'new_headline_1', 'new_headline_2', 'new_headline_3', 
-        'new_desc_1', 'new_desc_2']
+        fields = [
+            'refreshToken', 
+            'customer_id', 
+            'campaign_id', 
+            'new_headline_1', 
+            'new_headline_2', 
+            'new_headline_3', 
+            'new_desc_1', 
+            'new_desc_2'
+            ]
 
 # Serializer for editing keywords
 class EditKeywordThemesSerializer(serializers.ModelSerializer):
     class Meta:
         model = EditKeywordThemes
         fields = ['refreshToken', 'customer_id', 'campaign_id', 'display_name']
+
+# Serializer for editing geo targets
+class EditGeoTargetsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EditGeoTargets
+        fields = [
+            'refreshToken', 
+            'customer_id', 
+            'campaign_id', 
+            'new_geo_target_names',
+            'country_code',
+            'language_code',
+            ]

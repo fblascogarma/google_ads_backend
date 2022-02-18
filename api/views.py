@@ -34,7 +34,8 @@ from .serializers import (
     EditCampaignBudgetSerializer,
     SearchTermsReportSerializer,
     EditAdCreativeSerializer,
-    EditKeywordThemesSerializer
+    EditKeywordThemesSerializer,
+    EditGeoTargetsSerializer
     )
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -58,7 +59,8 @@ from .get_billing_info import billing_info
 from .edit_sc import (
     delete_sc, sc_settings, enable_sc, 
     pause_sc, delete_sc, edit_name_sc,
-    edit_budget, edit_ad, edit_keyword_themes
+    edit_budget, edit_ad, edit_keyword_themes,
+    edit_geo_targets
     )
 from .get_search_terms_report import search_terms_report
 from .get_gmb import business_profile
@@ -1118,6 +1120,71 @@ def get_business_info(request):
             gmb_info = business_profile(refresh_token)
 
             response = JsonResponse(gmb_info, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Edit geo target locations of smart campaign
+@api_view(['POST'])
+def edit_geo_target(request):
+    if request.method == 'POST':
+        serializer = EditGeoTargetsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            '''
+            get the refresh token
+            if there is no refresh token in the data sent via the ui
+            then it means user doesn't have credentials
+            and we are using our credentials to manage their linked account
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+
+            # if there is a refresh token, it means an existing user wants
+            # to create a new account and we should let them
+            else: 
+                refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            # get the new_geo_target_names
+            new_geo_target_names = serializer['new_geo_target_names'].value
+            # transform string into a list
+            new_geo_target_names = new_geo_target_names.replace('"','').replace('[','').replace(']','').split(",")
+
+            # get the country code
+            country_code = serializer['country_code'].value
+
+            # get the language code
+            language_code = serializer['language_code'].value
+
+            print(refresh_token)
+            print(customer_id)
+            print(campaign_id)
+            print(new_geo_target_names)
+            print(language_code)
+            print(country_code)
+
+            # call the function to edit geo targets
+            updated_geo_targets = edit_geo_targets(
+                refresh_token, 
+                customer_id, 
+                campaign_id, 
+                new_geo_target_names,
+                language_code,
+                country_code,
+                )
+            print("updated_geo_targets:")
+            print(updated_geo_targets)
+
+            response = JsonResponse(updated_geo_targets, safe=False)
            
             return response
         return Response(data="bad request")

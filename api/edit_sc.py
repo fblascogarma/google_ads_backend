@@ -1093,3 +1093,286 @@ def edit_keyword_themes(
     json.dumps(updated_kw)
 
     return updated_kw
+
+def edit_geo_targets(
+    refresh_token,
+    customer_id,
+    campaign_id,
+    new_geo_target_names,
+    language_code,
+    country_code):
+    '''
+    Edit geo location targeting - OK 
+    Parameters needed: credentials, customer_id, campaign_id, new_geo_target_names
+    '''
+
+    '''
+    Step 1 - Configurations
+    '''
+
+    # Configurations
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+    GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+
+    # Configure using dict (the refresh token will be a dynamic value)
+    credentials = {
+    "developer_token": GOOGLE_DEVELOPER_TOKEN,
+    "refresh_token": refresh_token,
+    "client_id": GOOGLE_CLIENT_ID,
+    "client_secret": GOOGLE_CLIENT_SECRET,
+    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+    "linked_customer_id": customer_id,
+    "use_proto_plus": True}
+
+    client = GoogleAdsClient.load_from_dict(credentials)
+
+    '''
+    Step 2 - Get the current geo location target names
+    '''
+    print('start step 2 - Get the current geo location target names')
+    # step 2.1: get the geo_target_constant's of the campaign_id and
+    # their corresponding campaign_criterion_id
+    ga_service = client.get_service("GoogleAdsService")
+    query = (f'''
+    SELECT campaign.id, campaign_criterion.resource_name, campaign_criterion.criterion_id,  
+    campaign_criterion.location.geo_target_constant
+    FROM campaign_criterion 
+    WHERE campaign.id = {campaign_id} ''')
+    response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+    geo_target_constant_list = []
+    campaign_criterion_id_list = []
+    for batch in response:
+        for row in batch.results:
+            geo_target_constants = row.campaign_criterion.location.geo_target_constant
+            if geo_target_constants:
+                geo_target_constant_list.append(geo_target_constants)
+                campaign_criterion_id_list.append(row.campaign_criterion.criterion_id)
+
+    print('geo_target_constant_list:')
+    print(geo_target_constant_list)
+    print("campaign_criterion_id_list:")
+    print(campaign_criterion_id_list)
+
+    # step 2.2: get the geo_target_names
+    geo_target_names = []
+    for constants in geo_target_constant_list:
+
+        # print(constants)    # constants = 'geoTargetConstants/20009'
+        constants_id = constants.split('/')[1]  # get only the id
+        # print(constants_id)
+        
+        query = (f'''
+        SELECT geo_target_constant.name, geo_target_constant.id 
+        FROM geo_target_constant 
+        WHERE geo_target_constant.id = {constants_id} ''')
+        response = ga_service.search_stream(customer_id=customer_id, query=query)
+        
+        for batch in response:
+            for row in batch.results:
+                geo_target_constant_name = row.geo_target_constant.name
+                geo_target_names.append(geo_target_constant_name)
+
+    print('geo_target_names to show the user the current location targets:')
+    print(geo_target_names)
+
+    '''
+    Step 3 - Create lists of geo targets to add and remove
+    '''
+    print('start step 3 - Create lists of geo targets to add and remove')
+    # step 3.1: get geo target constants for the geo target names selected by user
+    geo_targets = []
+    for name in new_geo_target_names:
+
+        gtc_service = client.get_service("GeoTargetConstantService")
+
+        gtc_request = client.get_type("SuggestGeoTargetConstantsRequest")
+
+        gtc_request.locale = language_code
+        gtc_request.country_code = country_code
+        # The location names to get suggested geo target constants.
+        gtc_request.location_names.names.append(
+            name
+        )
+
+        results = gtc_service.suggest_geo_target_constants(gtc_request)
+
+        location_resource_names = []
+        for suggestion in results.geo_target_constant_suggestions:
+            geo_target_constant = suggestion.geo_target_constant
+            
+            location_resource_names.append(geo_target_constant.resource_name)
+
+        # get the first one that is the one selected by the user
+        geo_targets.append(location_resource_names[0])
+
+    print('new geo_targets:')
+    print(geo_targets)
+
+    # step 3.2: create a list of geo_targets we need to remove and another list
+    # of geo_targets that we need to add using create method
+    geo_targets_to_remove = []
+    geo_targets_to_remove_index = []
+    geo_targets_to_add = []
+    for targets in geo_targets:
+        if targets not in geo_target_constant_list:
+            geo_targets_to_add.append(targets)
+
+    for targets in geo_target_constant_list:
+        if targets not in geo_targets:
+            geo_targets_to_remove.append(targets)
+            # get the index to use it later
+            geo_targets_to_remove_index.append(geo_target_constant_list.index(targets))
+
+
+    print("geo_targets_to_add:")
+    print(geo_targets_to_add)
+    print("geo_targets_to_remove:")
+    print(geo_targets_to_remove)
+    print("geo_targets_to_remove_index:")
+    print(geo_targets_to_remove_index)
+
+
+    # step 3.3: get the LocationInfo type to set location targets as the API needs
+    location_info_to_remove = []
+    for location in geo_targets_to_remove:
+        # Construct location information using the given geo target constant.
+        location_info = client.get_type("LocationInfo")
+        location_info.geo_target_constant = location
+        location_info_to_remove.append(location_info)
+
+    print('location_info_to_remove:')
+    print(location_info_to_remove)
+
+    location_info_to_add = []
+    for location in geo_targets_to_add:
+        # Construct location information using the given geo target constant.
+        location_info = client.get_type("LocationInfo")
+        location_info.geo_target_constant = location
+        location_info_to_add.append(location_info)
+
+    print('location_info_to_add:')
+    print(location_info_to_add)
+
+    '''
+    Step 4 - Create the remove and create operation
+    Important: update method does not work,
+    so you will have to use remove and create
+    to edit geo location targets.
+    '''
+    print('start step 4 - Create the remove and create operation')
+    # we are going to append all mutate operations under operations
+    operations = []
+
+    # step 4.1: create remove operation
+
+    # get the campaign_criterion_id of those that we need to remove
+    campaign_criterion_id_to_remove = []
+    for i in geo_targets_to_remove_index:
+        campaign_criterion_id_to_remove.append(campaign_criterion_id_list[i])
+
+    # create operation to remove them
+    campaign_criterion_service = client.get_service("CampaignCriterionService")
+    for i in campaign_criterion_id_to_remove:
+        # get the resource name
+        # that will be in this form: customers/{customer_id}/campaignCriteria/{campaign_id}~{criterion_id}
+        campaign_criterion_resource_name = campaign_criterion_service.campaign_criterion_path(
+        customer_id, campaign_id, i
+        )
+        # start mutate operation to remove
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+        campaign_criterion_operation.remove = campaign_criterion_resource_name
+        operations.append(campaign_criterion_operation)
+
+    # step 4.2: create the create operation
+    for location in location_info_to_add:
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+        campaign_criterion = campaign_criterion_operation.create
+
+        # Set the campaign
+        campaign_service = client.get_service("CampaignService")
+        campaign_criterion.campaign = campaign_service.campaign_path(
+            customer_id, campaign_id
+        )
+        # Set the criterion type to LOCATION.
+        campaign_criterion.type_ = client.enums.CriterionTypeEnum.LOCATION
+        # Set the location to the given location.
+        campaign_criterion.location = location
+        operations.append(campaign_criterion_operation)
+
+    print("operations to send as a mutate request:")
+    print(operations)
+
+    '''
+    Step 5 - Send the mutate request
+    '''
+    print('start step 5 - Send the mutate request')
+    response = campaign_criterion_service.mutate_campaign_criteria(
+        customer_id=customer_id,
+        operations=[ 
+            # Expand the list of campaign criterion operations into the list of
+            # other mutate operations
+            *operations,
+        ],
+    )
+    print("response:")
+    print(response)
+
+    '''
+    Step 6 - Get new geo location targets
+    '''
+    print('start step 6 - Get new geo location targets')
+    # step 6.1: get the geo_target_constant's of the campaign_id and
+    # their corresponding campaign_criterion_id
+    ga_service = client.get_service("GoogleAdsService")
+    query = (f'''
+    SELECT campaign.id, campaign_criterion.resource_name, campaign_criterion.criterion_id,  
+    campaign_criterion.location.geo_target_constant
+    FROM campaign_criterion 
+    WHERE campaign.id = {campaign_id} ''')
+    response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+    geo_target_constant_list = []
+    campaign_criterion_id_list = []
+    for batch in response:
+        for row in batch.results:
+            geo_target_constants = row.campaign_criterion.location.geo_target_constant
+            if geo_target_constants:
+                geo_target_constant_list.append(geo_target_constants)
+                campaign_criterion_id_list.append(row.campaign_criterion.criterion_id)
+
+    print('geo_target_constant_list:')
+    print(geo_target_constant_list)
+    print("campaign_criterion_id_list:")
+    print(campaign_criterion_id_list)
+
+    # step 6.2: get the geo_target_names
+    geo_target_names = []
+    for constants in geo_target_constant_list:
+
+        # print(constants)    # constants = 'geoTargetConstants/20009'
+        constants_id = constants.split('/')[1]  # get only the id
+        # print(constants_id)
+        
+        query = (f'''
+        SELECT geo_target_constant.name, geo_target_constant.id 
+        FROM geo_target_constant 
+        WHERE geo_target_constant.id = {constants_id} ''')
+        response = ga_service.search_stream(customer_id=customer_id, query=query)
+        
+        for batch in response:
+            for row in batch.results:
+                geo_target_constant_name = row.geo_target_constant.name
+                geo_target_names.append(geo_target_constant_name)
+
+    print('geo_target_names to show the user the current location targets:')
+    print(geo_target_names)
+
+    json.dumps(geo_target_names)
+
+    return(geo_target_names)
