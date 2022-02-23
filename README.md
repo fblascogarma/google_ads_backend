@@ -5,9 +5,14 @@ This project will teach you how to **build a backend for your web app** that int
 See [here](https://youtu.be/yVFZvJpLVxk) a 15-minute demo of the product you can have by cloning this repo and following the instructions.
 
 The main goal of this project is to **smooth and accelerate the integration process, while decreasing the cost of implementation & integration**. 
-Companies can use my open-source app and the [technical guide](https://docs.google.com/document/d/10WyzDUNZTVHhenWgCopf3YyaRDsyoavc7aHuOAMJF6Y/edit?usp=sharing) I wrote as the **entry point to elements within the Google Ads API**. They can learn about what they can do with Google Ads API and **get a clear idea of how a finished solution could look like**.  
 
-If this project helped you, please give it a star, and if you have suggestions, they are more than welcome. Thank you!
+Companies can use my open-source app and the [technical guide](https://docs.google.com/document/d/10WyzDUNZTVHhenWgCopf3YyaRDsyoavc7aHuOAMJF6Y/edit?usp=sharing) I wrote as the **entry point to elements within the Google Ads API**. 
+
+They can learn about what they can do with Google Ads API and **get a clear idea of how a finished solution could look like**.  
+
+If this project helped you, please **give it a star**, and if you have suggestions, they are more than welcome. 
+
+Thank you!
 
 # Assumptions & Prerequisites
 
