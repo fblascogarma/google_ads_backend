@@ -161,6 +161,72 @@ Also, make sure that you include the gmail account in the list of authorized tes
 
 <img width="706" alt="Authorize_test_users" src="https://user-images.githubusercontent.com/62343770/151631839-6c6e4605-84b9-4c21-8a50-4599d57897ac.png">
 
+## Deploy to production
+
+Although deploying to production is out of the scope of this project, I wanted to provide guidance on important things to consider, and deployment alternatives.
+
+This section has two sub-sections (backend and frontend) that explains what you need to do to deploy Fran Ads to production. Changes needed on the backend and frontend for the app to work correctly on production.
+
+This section doesn't cover load balancers, queue systems, nor scaling architectures. That's on you to define how and what to use.
+
+### Backend
+
+There are three things to consider when thinking of deploying the backend to production.
+
+1. The first thing you should do is turn off the debug mode. You don't want it running when your app is in production. Go to the [settings.py](https://github.com/fblascogarma/google_ads_backend/blob/main/backend/settings.py#L40) file, and change the 
+
+> DEBUG = True 
+
+to 
+
+> DEBUG = False 
+
+in line 40.
+
+2. Set up error email alerts so you know when an exception has been raised. This is important to fix those issues that can appear. Include all email addresses that you want by adding the ADMINS setting in the [settings.py](https://github.com/fblascogarma/google_ads_backend/blob/main/backend/settings.py) file. Below an example.
+> ADMINS = [
+>     ('John', 'john@example.com'), 
+>     ('Mary', 'mary@example.com')
+> ]
+
+3. Enable your server to send emails so you get the error email alerts. Depending on your arragement complexity, you need to add
+
+> [EMAIL_HOST](https://docs.djangoproject.com/en/4.0/ref/settings/#:~:text=store%20output%20files.-,EMAIL_HOST,-%C2%B6)
+> 
+> [EMAIL_HOST_PASSWORD](https://docs.djangoproject.com/en/4.0/ref/settings/#:~:text=See%20also%20EMAIL_PORT.-,EMAIL_HOST_PASSWORD,-%C2%B6)
+>
+> [EMAIL_HOST_USER](https://docs.djangoproject.com/en/4.0/ref/settings/#:~:text=See%20also%20EMAIL_HOST_USER.-,EMAIL_HOST_USER,-%C2%B6)
+>
+> [EMAIL_PORT](https://docs.djangoproject.com/en/4.0/ref/settings/#:~:text=See%20also%20EMAIL_HOST_PASSWORD.-,EMAIL_PORT,-%C2%B6)
+>
+> [EMAIL_USE_TLS](https://docs.djangoproject.com/en/4.0/ref/settings/#:~:text=in%20UTC%20(False).-,EMAIL_USE_TLS,-%C2%B6)
+
+[Here](https://django-book.readthedocs.io/en/latest/chapter12.html#using-different-settings-for-production) you will learn different ways to set up your settings files to keep your dev environment isolated from your prod environment.
+
+### Frontend
+
+First, you need to create a production build by running
+
+> npm run build
+
+This will create a **build** directory with a production build of your app. Inside the build/static directory will be your JavaScript and CSS files. Each filename inside of build/static will contain a unique hash of the file contents. This hash in the file name enables [long term caching techniques](https://create-react-app.dev/docs/production-build#static-file-caching).
+
+The frontend is completely platform-agnostic, so you can use any server software of your choice. See [here](https://create-react-app.dev/docs/deployment/#serving-apps-with-client-side-routing) how to serve the index.html for any unkown paths.
+
+Finally, you can override where your app is hosted by adding the field homepage in your [package.json](https://github.com/fblascogarma/google_ads_frontend/blob/main/package.json) file. See example below.
+
+> "homepage": "http://mywebsite.com/relativepath"
+
+Check out the links provided below for each Cloud provider.
+
+1. [Google Cloud](https://cloud.google.com/community/tutorials/deploy-react-nginx-cloud-run)
+2. [AWS Amplify](https://create-react-app.dev/docs/deployment/#aws-amplify)
+3. [Azure](https://create-react-app.dev/docs/deployment/#azure)
+4. [Firebase](https://create-react-app.dev/docs/deployment/#firebase)
+5. [Heroku](https://create-react-app.dev/docs/deployment/#heroku)
+6. [Netlify](https://create-react-app.dev/docs/deployment/#netlify)
+7. [Vercel](https://create-react-app.dev/docs/deployment/#vercel)
+
 ## Final remarks
 
 This is just to get you started so you can learn about making API calls to Google Ads API and Google My Business API. 
