@@ -161,7 +161,7 @@ Also, make sure that you include the gmail account in the list of authorized tes
 
 <img width="706" alt="Authorize_test_users" src="https://user-images.githubusercontent.com/62343770/151631839-6c6e4605-84b9-4c21-8a50-4599d57897ac.png">
 
-## Deploy to production
+# Deploy to production
 
 Although deploying to production is out of the scope of this project, I wanted to provide guidance on important things to consider, and deployment alternatives.
 
@@ -169,7 +169,7 @@ This section has two sub-sections (backend and frontend) that explains what you 
 
 This section doesn't cover load balancers, queue systems, nor scaling architectures. That's on you to define how and what to use.
 
-### Backend
+## Backend
 
 There are three things to consider when thinking of deploying the backend to production.
 
@@ -203,7 +203,7 @@ in line 40.
 
 [Here](https://django-book.readthedocs.io/en/latest/chapter12.html#using-different-settings-for-production) you will learn different ways to set up your settings files to keep your dev environment isolated from your prod environment.
 
-### Frontend
+## Frontend
 
 First, you need to create a production build by running
 
@@ -227,10 +227,10 @@ Check out the links provided below for each Cloud provider.
 6. [Netlify](https://create-react-app.dev/docs/deployment/#netlify)
 7. [Vercel](https://create-react-app.dev/docs/deployment/#vercel)
 
-## Final remarks
+# Final remarks
 
 This is just to get you started so you can learn about making API calls to Google Ads API and Google My Business API. 
 
 By cloning this project and the frontend that is in a separate repo in my GitHub profile, you are ready to start exploring what you can do with Google Ads API.
 
-Happy hacking!
+#### **Happy hacking!**
