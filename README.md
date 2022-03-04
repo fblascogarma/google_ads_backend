@@ -165,7 +165,7 @@ Also, make sure that you include the gmail account in the list of authorized tes
 
 Although deploying to production is out of the scope of this project, I wanted to provide guidance on important things to consider, and deployment alternatives.
 
-This section has two sub-sections (backend and frontend) that explains what you need to do to deploy Fran Ads to production. Changes needed on the backend and frontend for the app to work correctly on production.
+This section has two sub-sections (backend and frontend) that explains what you need to do to deploy Fran Ads to production. These changes are needed for the app to work correctly.
 
 This section doesn't cover load balancers, queue systems, nor scaling architectures. That's on you to define how and what to use.
 
@@ -189,7 +189,7 @@ in line 40.
 >     ('Mary', 'mary@example.com')
 > ]
 
-3. Enable your server to send emails so you get the error email alerts. Depending on your arragement complexity, you need to add
+3. Enable your server to send emails so you get the error email alerts. Depending on your arragement complexity, you need to add to the [settings.py](https://github.com/fblascogarma/google_ads_backend/blob/main/backend/settings.py) file all of these below.
 
 > [EMAIL_HOST](https://docs.djangoproject.com/en/4.0/ref/settings/#:~:text=store%20output%20files.-,EMAIL_HOST,-%C2%B6)
 > 
@@ -232,3 +232,5 @@ Check out the links provided below for each Cloud provider.
 This is just to get you started so you can learn about making API calls to Google Ads API and Google My Business API. 
 
 By cloning this project and the frontend that is in a separate repo in my GitHub profile, you are ready to start exploring what you can do with Google Ads API.
+
+Happy hacking!
