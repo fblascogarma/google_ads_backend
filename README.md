@@ -43,7 +43,7 @@ There are two files that are ignored so you will not see them here, but I have t
 
 # App Architecture
 
-![app architecture](https://user-images.githubusercontent.com/62343770/151630725-253d241a-6239-405f-9355-cf5dbfd381f9.png)
+![app architecture](https://user-images.githubusercontent.com/62343770/163631847-e5e38b27-8258-459d-b58d-5f0f0c851a7a.png)
 
 
 # Installation
