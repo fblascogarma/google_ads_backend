@@ -130,6 +130,6 @@ def business_profile(refresh_token):
 
         return business_data
 
-    except:
-        print('There was an error trying to get Business Information.')
+    except Exception as e:
+        print('There was an error trying to get Business Information.' + str(e))
         
