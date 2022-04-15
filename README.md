@@ -89,7 +89,20 @@ You have to create a Google Cloud project and get the necessary credentials to c
 
 You need to register your app as a client of Google Ads. You will receive unique client credentials that you will use to authenticate that the one making the calls to the API is your app. 
 
-Sign into your [Google Cloud Platform](https://cloud.google.com/) console, and go to your project. If you haven’t created one, do it by following the steps outlined there. 
+Sign into your [Google Cloud Platform](https://cloud.google.com/) console, and go to your project. If you haven’t created one, follow the steps outlined below.
+
+1. Go to [GCP](https://cloud.google.com/) and go to APIs & Services > Credentials. 
+1. Create a project.
+1. Click on Create credentials > OAuth client id
+1. Following the steps, you will be prompted to choose the type of user. Choose ‘External’ as your project will support external users as it is usually the case with our partners.
+1. Fill out the required fields: App name, User support email, and Email addresses in the Developer contact information section.
+1. Click on ADD OR REMOVE SCOPES. The scopes that you will need to add depend on if you want to offer Google Business Information (aka Google My Business) or not (see the next sub-section called Google My Business (GMB)). You will definitely use the Google Ads API, so you can add it by copying and pasting the following: https://www.googleapis.com/auth/adwords
+1. Add your google email address as a user.
+1. Go again to Credentials > Create credentials > OAuth client id.
+1. In Application type put ‘Web application’. As stated in the value proposition section, we are not going to create a service account because that is not usually the case for our partners.
+1. In the Authorized JavaScript origins section and Authorized redirect URIs section, put "http://localhost:8080" in both. This is important because the OAuth flow will redirect you to that URI, and if you don’t include it in the project, you will get an error.
+1. Download the json file with your credentials (your Client ID, Client Secret, redirect uris, etc.) and save it in the ‘shopping’ folder inside googleads-shopping-samples/python.
+1. Enable the APIs you are going to use (Content API, Site Verification API, and Google Ads API) by navigating to APIs & Services > Dashboard, in your GCP project and click on ‘ENABLE APIS AND SERVICES’. Use the search bar to find them faster. The OAuth credentials will be the same as the ones you already created for the project.
 
 When you have your OAuth credentials, download the JSON file and save it to your backend folder. That will be the file that stores your client credentials that authenticates your app to Google’s services. 
 That file contains information to link your app with your GCP project. 
@@ -97,7 +110,6 @@ Very important are the client id and client secret that tells Google which app p
 
 You can use a YAML file to load your credentials, or you can use a dictionary to use it like I did. I recommend you store the values of client secret, client id, developer token, and login customer id in environment variables like I did.
 
-Also, enable the APIs you are going to use. To enable APIs for the project, you need to go to APIs & Services > Dashboard, in your GCP project and click on ‘ENABLE APIS AND SERVICES’. Use the search bar to enable the Google Ads API.
 
 ### Google My Business
 
