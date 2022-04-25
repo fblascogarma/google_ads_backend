@@ -38,36 +38,61 @@ def list_accounts(refresh_token):
     "use_proto_plus": True}
 
     try:
-        googleads_client = GoogleAdsClient.load_from_dict(credentials)
+        client = GoogleAdsClient.load_from_dict(credentials)
 
-        customer_service = googleads_client.get_service("CustomerService")
+        customer_service = client.get_service("CustomerService")
+        ga_service = client.get_service("GoogleAdsService")
 
         accessible_customers = customer_service.list_accessible_customers()
-        # result_total = len(accessible_customers.resource_names)
 
         resource_names = accessible_customers.resource_names
         
         customer_data = []
         for resource_name in resource_names:
             try:
-                customer = customer_service.get_customer(resource_name=resource_name)
-            
-                if customer.manager == 1:
-                    account_type = "Manager"
-                else:
-                    if customer.manager == 0:
-                        account_type = "Client"
+                customer_id = resource_name.split('/')[1]
+                query = (f'''
+                    SELECT 
+                        customer.currency_code, 
+                        customer.descriptive_name, 
+                        customer.id, 
+                        customer.manager, 
+                        customer.resource_name, 
+                        customer.time_zone 
+                    FROM customer
+                    WHERE customer.resource_name = '{resource_name}'
+                    '''
+                )
+                stream = ga_service.search_stream(
+                    customer_id=customer_id,
+                    query=query
+                )
 
-                data = {}
-                data["customer_id"] = customer.id
-                data["description"] = customer.descriptive_name
-                data["time_zone"] = customer.time_zone
-                data["currency"] = customer.currency_code
-                data["account_type"] = account_type
-                customer_data.append(data)
+                for batch in stream:
+                    for row in batch.results:
+                        data = {}
+                        data["customer_id"] = row.customer.id
+                        data["description"] = row.customer.descriptive_name
+                        data["time_zone"] = row.customer.time_zone
+                        data["currency"] = row.customer.currency_code
+                        if row.customer.manager == 1:
+                            data["account_type"] = "Manager"
+                        elif row.customer.manager == 0:
+                            data["account_type"] = "Client"
+                        customer_data.append(data)
             
-            # need to write an exception in case the user has a test account, which would throw an error
-            except: print("user permission denied")
+            # the exception below is in case the user has a test account, 
+            # which would throw an error
+            except GoogleAdsException as ex:
+                print(
+                    f'Request with ID "{ex.request_id}" failed with status '
+                    f'"{ex.error.code().name}" and includes the following errors:'
+                )
+                for error in ex.failure.errors:
+                    print(f'\tError with message "{error.message}".')
+                    if error.location:
+                        for field_path_element in error.location.field_path_elements:
+                            print(f"\t\tOn field: {field_path_element.field_name}")
 
         json.dumps(customer_data)
         print(customer_data)
