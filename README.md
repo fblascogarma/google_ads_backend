@@ -2,7 +2,7 @@
 
 This project will teach you how to **build a backend for your web app** that integrates with Google Ads using Google Ads API. To see the project for the frontend, go [here](https://github.com/fblascogarma/google_ads_frontend).
 
-See [here](https://youtu.be/yVFZvJpLVxk) a 15-minute demo of the product you can have by cloning this repo and following the instructions.
+See [here](https://youtu.be/yVFZvJpLVxk) a 15-minute demo of the product you can have by cloning this repo and following the instructions. [Here](https://youtu.be/TCmxgpnEwC4) is a shorter product demo (6 minutes) that shows the flow for users without existing Google Ads accounts.
 
 The main goal of this project is to **smooth and accelerate the integration process, while decreasing the cost of implementation & integration**. 
 
