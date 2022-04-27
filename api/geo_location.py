@@ -20,7 +20,11 @@ from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
 
 
-def get_geo_location_recommendations(refresh_token, language_code, country_code, location):
+def get_geo_location_recommendations(
+    refresh_token, 
+    language_code, 
+    country_code, 
+    location):
 
     try:
 

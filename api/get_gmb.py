@@ -91,44 +91,50 @@ def business_profile(refresh_token):
         print("result:")
         print(result)
 
-        # get the business_location_id
-        business_location_id = result['locations'][0]['name'].split('/')[1]
-        print("business_location_id:")
-        print(business_location_id)
-        # get the business_name
-        business_name = result['locations'][0]['title']
-        print("business_name:")
-        print(business_name)
-        # get the phone_number
-        phone_number = result['locations'][0]['phoneNumbers']['primaryPhone']
-        # eliminate spaces and dashes
-        phone_number = re.sub('[^0-9a-zA-Z]+', '', phone_number)
-        print("phone_number:")
-        print(phone_number)
-        # get the final_url
-        final_url = result['locations'][0]['websiteUri']
-        print("final_url:")
-        print(final_url)
+        # if the result comes with info
+        if result:
+            # get the business_location_id
+            business_location_id = result['locations'][0]['name'].split('/')[1]
+            print("business_location_id:")
+            print(business_location_id)
+            # get the business_name
+            business_name = result['locations'][0]['title']
+            print("business_name:")
+            print(business_name)
+            # get the phone_number
+            phone_number = result['locations'][0]['phoneNumbers']['primaryPhone']
+            # eliminate spaces and dashes
+            phone_number = re.sub('[^0-9a-zA-Z]+', '', phone_number)
+            print("phone_number:")
+            print(phone_number)
+            # get the final_url
+            final_url = result['locations'][0]['websiteUri']
+            print("final_url:")
+            print(final_url)
 
-        '''
-        Step 4 - Consolidate info and send return object
-        '''
-        business_data = []
-        data = {}
-        data['account'] = account
-        data['business_location_id'] = business_location_id
-        data['business_name'] = business_name
-        data['phone_number'] = phone_number
-        data['final_url'] = final_url
-        print("data:")
-        print(data)
-        business_data.append(data)
-        print("business_data:")
-        print(business_data)
+            '''
+            Step 4 - Consolidate info and send return object
+            '''
+            business_data = []
+            data = {}
+            data['account'] = account
+            data['business_location_id'] = business_location_id
+            data['business_name'] = business_name
+            data['phone_number'] = phone_number
+            data['final_url'] = final_url
+            print("data:")
+            print(data)
+            business_data.append(data)
+            print("business_data:")
+            print(business_data)
 
-        # json.dumps(business_data)
+            # json.dumps(business_data)
 
-        return business_data
+            return business_data
+        
+        else:
+            print('no GMB data retrieved')
+            pass 
 
     except Exception as e:
         print('There was an error trying to get Business Information.' + str(e))

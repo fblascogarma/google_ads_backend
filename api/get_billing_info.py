@@ -18,23 +18,38 @@ import sys
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
 
-def billing_info(refresh_token, customer_id):
+def billing_info(
+    refresh_token, 
+    customer_id,
+    use_login_id):
     try:
         # Configurations
         GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
         GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
         GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-        # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+        GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-        # Configure using dict (the refresh token will be a dynamic value)
-        credentials = {
-        "developer_token": GOOGLE_DEVELOPER_TOKEN,
-        "refresh_token": refresh_token,
-        "client_id": GOOGLE_CLIENT_ID,
-        "client_secret": GOOGLE_CLIENT_SECRET,
-        # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-        "linked_customer_id": customer_id,
-        "use_proto_plus": True}
+        # Configure using dictionary.
+        # Check if we need to use login_customer_id in the headers,
+        # which is needed if the Ads account was created by the app.
+        if use_login_id == True:
+            credentials = {
+            "developer_token": GOOGLE_DEVELOPER_TOKEN,
+            "refresh_token": refresh_token,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+            # "linked_customer_id": customer_id,
+            "use_proto_plus": True}
+        else:
+            credentials = {
+            "developer_token": GOOGLE_DEVELOPER_TOKEN,
+            "refresh_token": refresh_token,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+            "linked_customer_id": customer_id,
+            "use_proto_plus": True}
 
         client = GoogleAdsClient.load_from_dict(credentials)
 

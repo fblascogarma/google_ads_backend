@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import nullcontext
 from json.decoder import JSONDecoder
 from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -165,6 +166,7 @@ def search_token(request):
     if request.method == 'POST':
         serializer = MyTokenSerializer(data=request.data)
         if serializer.is_valid():
+            print('serializer is valid')
             # get the token associated with that user
             mytoken = serializer['mytoken'].value
 
@@ -172,7 +174,7 @@ def search_token(request):
             # if there is only one mytoken with that value in the database
             # first try this
             try:
-                
+                print('trying to get refresh token...')
                 refresh_token = RefreshToken.objects.get(mytoken=mytoken)
 
                 # send the refresh token to the frontend
@@ -183,7 +185,7 @@ def search_token(request):
             # you will get the MultipleObjectsReturned error
             # so then try this
             except RefreshToken.MultipleObjectsReturned:
-                
+                print('more than one mytoken found so getting most recent one')
                 query_set = RefreshToken.objects.filter(mytoken=mytoken)
                 # get the last one which is the most recent one
                 most_recent = len(query_set) - 1
@@ -191,35 +193,40 @@ def search_token(request):
                 query_set = query_set.values()[most_recent]
         
                 refresh_token = query_set['refreshToken']
+                print("refresh_token:")
+                print(refresh_token)
             
                 # send the refresh token to the frontend
                 response = HttpResponse(refresh_token)
                 return response
-
+            
             # if user has no refresh token,
             # check if user has a customer_id from Google Ads
             # and send it to the frontend
-            finally:
+            except RefreshToken.DoesNotExist:
+                print('user has no refresh token')
                 try:
+                    print('trying to get customer id if exists...')
                     customer_id = NewAccountCustomerID.objects.get(mytoken=mytoken)
 
                     response2 = HttpResponse(customer_id)
                     return response2
 
                 except NewAccountCustomerID.MultipleObjectsReturned:
-
+                    print('more than one customer id found so getting most recen one')
                     query_set2 = NewAccountCustomerID.objects.filter(mytoken=mytoken)
                     most_recent2 = len(query_set2) - 1
                     query_set2 = query_set2.values()[most_recent2]
 
-                    customer_id = query_set['customer_id']
+                    customer_id = query_set2['customer_id']
 
                     response2 = HttpResponse(customer_id)
                     return response2
 
+                # new app user that doesn't have refresh token, nor customer id
                 except NewAccountCustomerID.DoesNotExist:
-                    response2 = []
-                    print(response2)
+                    print('no refresh token nor customer id found')
+                    return Response('', status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
@@ -232,20 +239,23 @@ def get_campaigns(request):
             serializer.save()
 
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # if there is a refresh token, it means an existing user wants
-            # to create a new account and we should let them
+                use_login_id = True
+                print('no refresh token so using the app')
             else: 
                 refresh_token = serializer['refreshToken'].value
-
+                use_login_id = False
+                print('found a refresh token')
+            
             # get the customer_id
             customer_id = serializer['customer_id'].value
             customer_id = str(customer_id)
@@ -255,7 +265,11 @@ def get_campaigns(request):
             # print(date_range)
 
             # call the function to get the campaigns
-            get_campaign_info = campaign_info(refresh_token, customer_id, date_range)
+            get_campaign_info = campaign_info(
+                refresh_token, 
+                customer_id, 
+                date_range,
+                use_login_id)
             print(get_campaign_info)
 
             response = JsonResponse(get_campaign_info, safe=False)
@@ -273,19 +287,20 @@ def get_keyword_themes_recommendations(request):
             serializer.save()
             
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # if there is a refresh token, it means an existing user wants
-            # to create a new account and we should let them
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the keyword text
             keyword_text = serializer['keyword_text'].value
@@ -323,7 +338,8 @@ def get_keyword_themes_recommendations(request):
                 final_url,
                 business_name,
                 business_location_id,
-                geo_target_names
+                geo_target_names,
+                use_login_id
                 )
             print(get_recommendations)
             
@@ -340,19 +356,20 @@ def get_location_recommendations(request):
         if serializer.is_valid():
             serializer.save()
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # if there is a refresh token, it means an existing user wants
-            # to create a new account and we should let them
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the location
             location = serializer['location'].value
@@ -364,7 +381,11 @@ def get_location_recommendations(request):
             language_code = serializer['language_code'].value
 
             # call the function to get the recommendations
-            get_recommendations = get_geo_location_recommendations(refresh_token, location, country_code, language_code)
+            get_recommendations = get_geo_location_recommendations(
+                refresh_token, 
+                location, 
+                country_code, 
+                language_code)
 
             response = JsonResponse(get_recommendations, safe=False)
            
@@ -385,7 +406,8 @@ def create_google_ads_account(request):
             so we can create an account on their behalf
             using our refresh token
             '''
-            if serializer['refreshToken'].value == '':
+            # if there is no refresh token, use the App's refresh token
+            if not serializer['refreshToken'].value:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 mytoken = serializer['mytoken'].value
@@ -393,6 +415,9 @@ def create_google_ads_account(request):
             # if there is a refresh token, it means an existing user wants
             # to create a new account and we should let them
             else: refresh_token = serializer['refreshToken'].value
+
+            print("refresh_token:")
+            print(refresh_token)
 
             # get the account_name
             account_name = serializer['account_name'].value
@@ -442,18 +467,20 @@ def get_budget(request):
             serializer.save()
             
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # else use the refresh token associated with that account
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -493,7 +520,8 @@ def get_budget(request):
                 language_code, 
                 country_code,
                 business_location_id,
-                business_name)
+                business_name,
+                use_login_id)
             print(get_recommendations)
             
             response = JsonResponse(get_recommendations, safe=False)
@@ -510,18 +538,20 @@ def get_ad_creatives(request):
             serializer.save()
             
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # else use the refresh token associated with that account
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -561,7 +591,8 @@ def get_ad_creatives(request):
                 language_code, 
                 country_code,
                 business_location_id,
-                business_name)
+                business_name,
+                use_login_id)
             
             print('get_recommendations:')
             print(get_recommendations)
@@ -580,18 +611,20 @@ def create_smart_campaign(request):
             serializer.save()
             
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # else use the refresh token associated with that account
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -654,7 +687,8 @@ def create_smart_campaign(request):
                 phone_number, landing_page, 
                 business_name, business_location_id,
                 headline_1_user, headline_2_user, headline_3_user,
-                desc_1_user, desc_2_user, campaign_name)
+                desc_1_user, desc_2_user, campaign_name,
+                use_login_id)
             print(smart_campaign)
             
             response = JsonResponse(smart_campaign, safe=False)
@@ -671,25 +705,30 @@ def get_billing(request):
             serializer.save()
 
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # else use the refresh token associated with that account
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
             customer_id = str(customer_id)
 
             # call the function to get the campaigns
-            get_billing_info = billing_info(refresh_token, customer_id)
+            get_billing_info = billing_info(
+                refresh_token, 
+                customer_id,
+                use_login_id)
             print(get_billing_info)
 
             response = JsonResponse(get_billing_info, safe=False)
@@ -706,18 +745,20 @@ def get_sc_settings(request):
             serializer.save()
 
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # else use the refresh token associated with that account
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -728,7 +769,11 @@ def get_sc_settings(request):
             campaign_id = str(campaign_id)
 
             # call the function to get the campaign settings
-            sc_settings_info = sc_settings(refresh_token, customer_id, campaign_id)
+            sc_settings_info = sc_settings(
+                refresh_token, 
+                customer_id, 
+                campaign_id,
+                use_login_id)
             print(sc_settings_info)
 
             response = JsonResponse(sc_settings_info, safe=False)
@@ -745,18 +790,20 @@ def enable_campaign(request):
             serializer.save()
 
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # else use the refresh token associated with that account
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -767,7 +814,11 @@ def enable_campaign(request):
             campaign_id = str(campaign_id)
 
             # call the function to enable the smart campaign
-            new_status = enable_sc(refresh_token, customer_id, campaign_id)
+            new_status = enable_sc(
+                refresh_token, 
+                customer_id, 
+                campaign_id,
+                use_login_id)
             print(new_status)
 
             response = JsonResponse(new_status, safe=False)
@@ -784,18 +835,20 @@ def pause_campaign(request):
             serializer.save()
 
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # else use the refresh token associated with that account
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -806,7 +859,11 @@ def pause_campaign(request):
             campaign_id = str(campaign_id)
 
             # call the function to pause the smart campaign
-            new_status = pause_sc(refresh_token, customer_id, campaign_id)
+            new_status = pause_sc(
+                refresh_token, 
+                customer_id, 
+                campaign_id,
+                use_login_id)
             print(new_status)
 
             response = JsonResponse(new_status, safe=False)
@@ -823,18 +880,20 @@ def delete_campaign(request):
             serializer.save()
 
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # else use the refresh token associated with that account
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -845,7 +904,11 @@ def delete_campaign(request):
             campaign_id = str(campaign_id)
 
             # call the function to delete the smart campaign
-            new_status = delete_sc(refresh_token, customer_id, campaign_id)
+            new_status = delete_sc(
+                refresh_token, 
+                customer_id, 
+                campaign_id,
+                use_login_id)
             print(new_status)
 
             response = JsonResponse(new_status, safe=False)
@@ -862,18 +925,20 @@ def edit_campaign_name(request):
             serializer.save()
 
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # else use the refresh token associated with that account
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -891,7 +956,8 @@ def edit_campaign_name(request):
                 refresh_token, 
                 customer_id, 
                 campaign_id, 
-                new_campaign_name
+                new_campaign_name,
+                use_login_id
                 )
             print(new_name)
 
@@ -909,18 +975,20 @@ def edit_campaign_budget(request):
             serializer.save()
 
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # else use the refresh token associated with that account
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -943,7 +1011,8 @@ def edit_campaign_budget(request):
                 customer_id, 
                 campaign_id, 
                 new_budget,
-                budget_id
+                budget_id,
+                use_login_id
                 )
             print(new_campaign_budget)
 
@@ -961,19 +1030,20 @@ def get_search_terms_report(request):
             serializer.save()
 
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # if there is a refresh token, it means an existing user wants
-            # to create a new account and we should let them
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -992,7 +1062,8 @@ def get_search_terms_report(request):
                 refresh_token, 
                 customer_id, 
                 campaign_id, 
-                date_range)
+                date_range,
+                use_login_id)
             print(get_search_terms_info)
 
             response = JsonResponse(get_search_terms_info, safe=False)
@@ -1009,18 +1080,20 @@ def edit_ad_creative(request):
             serializer.save()
 
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # else use the refresh token associated with that account
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -1047,7 +1120,8 @@ def edit_ad_creative(request):
                 new_headline_2, 
                 new_headline_3, 
                 new_desc_1,
-                new_desc_2
+                new_desc_2,
+                use_login_id
                 )
             print(new_ad_creative)
 
@@ -1064,19 +1138,20 @@ def edit_keywords(request):
         if serializer.is_valid():
             serializer.save()
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # if there is a refresh token, it means an existing user wants
-            # to create a new account and we should let them
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -1096,7 +1171,8 @@ def edit_keywords(request):
                 refresh_token, 
                 customer_id, 
                 campaign_id, 
-                display_name
+                display_name,
+                use_login_id
                 )
             print("updated_keywords:")
             print(updated_keywords)
@@ -1114,14 +1190,21 @@ def get_business_info(request):
         if serializer.is_valid():
             serializer.save()
             # get the refresh token
-            refresh_token = serializer['refreshToken'].value
+            if serializer['refreshToken'].value != '':
+                refresh_token = serializer['refreshToken'].value
+                print("refresh_token:")
+                print(refresh_token)
 
-            # call the function to get the business info
-            gmb_info = business_profile(refresh_token)
+                # call the function to get the business info
+                gmb_info = business_profile(refresh_token)
 
-            response = JsonResponse(gmb_info, safe=False)
-           
-            return response
+                response = JsonResponse(gmb_info, safe=False)
+            
+                return response
+            # if no refresh token, don't try to get GMB info
+            else:
+                return Response(data="")
+   
         return Response(data="bad request")
 
 # Edit geo target locations of smart campaign
@@ -1132,19 +1215,20 @@ def edit_geo_target(request):
         if serializer.is_valid():
             serializer.save()
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            and we are using our credentials to manage their linked account
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
             if serializer['refreshToken'].value == '':
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-
-            # if there is a refresh token, it means an existing user wants
-            # to create a new account and we should let them
+                use_login_id = True
             else: 
                 refresh_token = serializer['refreshToken'].value
+                use_login_id = False
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -1180,6 +1264,7 @@ def edit_geo_target(request):
                 new_geo_target_names,
                 language_code,
                 country_code,
+                use_login_id
                 )
             print("updated_geo_targets:")
             print(updated_geo_targets)

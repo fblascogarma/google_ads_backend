@@ -44,7 +44,7 @@ class AntiForgeryToken(models.Model):
 # Model for the refresh token
 class RefreshToken(models.Model):                   
     mytoken = models.CharField(max_length=500)
-    refreshToken = models.CharField(max_length=500)
+    refreshToken = models.CharField(max_length=500, blank=True)
 
     def __str__(self): 
         return self.refreshToken

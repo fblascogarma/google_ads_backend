@@ -25,7 +25,7 @@ from pyasn1.type.univ import Null
 
 # customer_id = str(4037974191) # billing set up    | account created via api
 # customer_id = str(4597538560) # no billing        | account created via api
-customer_id = str(2916870939) # billing set up      | account created via ui
+# customer_id = str(2916870939) # billing set up      | account created via ui
 # campaign_id = str(14648734935)    # used it to test remove campaign, and it was successful
 # campaign_id = str(14652327041)
 # new_budget = 3*1000000
@@ -48,11 +48,11 @@ customer_id = str(2916870939) # billing set up      | account created via ui
 #     ]                                                   # for suggestion_info
 
 
-# # Configurations
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+# # # Configurations
+# GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+# GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 # GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-# GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+# # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 # GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
 
 # # Configure using dict (the refresh token will be a dynamic value)
@@ -68,87 +68,195 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 # client = GoogleAdsClient.load_from_dict(credentials)
 
 '''
+Link existing Google Ads account to your Manager account (MCC)
+'''
+from google.ads.googleads.errors import GoogleAdsException
+from google.api_core import protobuf_helpers
+
+customer_id = str(xx)   # id of client account
+
+# # Configurations
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+# GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+
+# Configure using dict (the refresh token will be a dynamic value)
+credentials = {
+"developer_token": GOOGLE_DEVELOPER_TOKEN,
+"refresh_token": GOOGLE_REFRESH_TOKEN,
+"client_id": GOOGLE_CLIENT_ID,
+"client_secret": GOOGLE_CLIENT_SECRET,
+# "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+"linked_customer_id": customer_id,
+"use_proto_plus": True}
+
+client = GoogleAdsClient.load_from_dict(credentials)
+
+manager_customer_id = GOOGLE_CLIENT_ID  # id of manager account
+
+customer_client_link_service = client.get_service(
+    "CustomerClientLinkService"
+)
+
+# Extend an invitation to the client while authenticating as the manager.
+client_link_operation = client.get_type("CustomerClientLinkOperation")
+client_link = client_link_operation.create
+client_link.client_customer = customer_client_link_service.customer_path(
+    customer_id
+)
+client_link.status = client.enums.ManagerLinkStatusEnum.PENDING
+
+response = customer_client_link_service.mutate_customer_client_link(
+    customer_id=manager_customer_id, operation=client_link_operation
+)
+resource_name = response.results[0].resource_name
+
+print(
+    f'Extended an invitation from customer "{manager_customer_id}" to '
+    f'customer "{customer_id}" with client link resource_name '
+    f'"{resource_name}"'
+)
+
+# Find the manager_link_id of the link we just created, so we can construct
+# the resource name for the link from the client side. Note that since we
+# are filtering by resource_name, a unique identifier, only one
+# customer_client_link resource will be returned in the response
+query = f'''
+    SELECT
+        customer_client_link.manager_link_id
+    FROM
+        customer_client_link
+    WHERE
+        customer_client_link.resource_name = "{resource_name}"'''
+
+ga_service = client.get_service("GoogleAdsService")
+
+try:
+    response = ga_service.search(
+        customer_id=manager_customer_id, query=query
+    )
+    # Since the googleads_service.search method returns an iterator we need
+    # to initialize an iteration in order to retrieve results, even though
+    # we know the query will only return a single row.
+    for row in response.result:
+        manager_link_id = row.customer_client_link.manager_link_id
+except GoogleAdsException as ex:
+    print(ex)
+    # _handle_googleads_exception(ex)
+
+customer_manager_link_service = client.get_service(
+    "CustomerManagerLinkService"
+)
+manager_link_operation = client.get_type("CustomerManagerLinkOperation")
+manager_link = manager_link_operation.update
+manager_link.resource_name = (
+    customer_manager_link_service.customer_manager_link_path(
+        customer_id,
+        manager_customer_id,
+        manager_link_id,
+    )
+)
+
+manager_link.status = client.enums.ManagerLinkStatusEnum.ACTIVE
+client.copy_from(
+    manager_link_operation.update_mask,
+    protobuf_helpers.field_mask(None, manager_link._pb),
+)
+
+response = customer_manager_link_service.mutate_customer_manager_link(
+    customer_id=manager_customer_id, operations=[manager_link_operation]
+)
+print(
+    "Client accepted invitation with resource_name: "
+    f'"{response.results[0].resource_name}"'
+)
+# [END link_manager_to_client]
+
+
+'''
 Get business_location_id from GMB
 '''
-# you need to install google-api-python-client to use googleapiclient.discovery
-from googleapiclient.discovery import build
-import google.oauth2.credentials
+# # you need to install google-api-python-client to use googleapiclient.discovery
+# from googleapiclient.discovery import build
+# import google.oauth2.credentials
 
-# documentation that explains the fields of the credentials
-# https://google-auth.readthedocs.io/en/stable/reference/google.oauth2.credentials.html
-refresh_token = "1//06ByTYlm2uCkJCgYIARAAGAYSNwF-L9IrBvYYkTW8ZRzIW7Nt-KOFyTGP2nGupJJB4pE6PdbI2nzmtVGt_HKLK3iTWp2LErxaAj0"
-credentials = {
-    'refresh_token': refresh_token,
-    'client_id': GOOGLE_CLIENT_ID,
-    'client_secret': GOOGLE_CLIENT_SECRET,
-    'token': None,
-    'token_uri': "https://oauth2.googleapis.com/token"
-}
+# # documentation that explains the fields of the credentials
+# # https://google-auth.readthedocs.io/en/stable/reference/google.oauth2.credentials.html
+# refresh_token = "1//06ByTYlm2uCkJCgYIARAAGAYSNwF-L9IrBvYYkTW8ZRzIW7Nt-KOFyTGP2nGupJJB4pE6PdbI2nzmtVGt_HKLK3iTWp2LErxaAj0"
+# credentials = {
+#     'refresh_token': refresh_token,
+#     'client_id': GOOGLE_CLIENT_ID,
+#     'client_secret': GOOGLE_CLIENT_SECRET,
+#     'token': None,
+#     'token_uri': "https://oauth2.googleapis.com/token"
+# }
 
-# build the credentials object
-google_credentials = google.oauth2.credentials.Credentials(**credentials)
+# # build the credentials object
+# google_credentials = google.oauth2.credentials.Credentials(**credentials)
 
-# first you will call the Account Managment API to get the account resource name
-# for the Account Managment API
-service = build(
-    'mybusinessaccountmanagement',      # serviceName
-    'v1',                               # version
-    credentials=google_credentials      # user's credentials
-    )
-request = service.accounts().list()
+# # first you will call the Account Managment API to get the account resource name
+# # for the Account Managment API
+# service = build(
+#     'mybusinessaccountmanagement',      # serviceName
+#     'v1',                               # version
+#     credentials=google_credentials      # user's credentials
+#     )
+# request = service.accounts().list()
 
-# Execute the request and print the result.
-result = request.execute()
-print("result:")
-print(result)
-account = result['accounts'][0]['name']
-print("account:")
-print(account)
+# # Execute the request and print the result.
+# result = request.execute()
+# print("result:")
+# print(result)
+# account = result['accounts'][0]['name']
+# print("account:")
+# print(account)
 
-# then you need to use the Business Information API 
-# to get the location id
+# # then you need to use the Business Information API 
+# # to get the location id
 
-# for the Business Information API
-service = build(
-    'mybusinessbusinessinformation',    # serviceName
-    'v1',                               # version
-    credentials=google_credentials      # user's credentials
-    )
+# # for the Business Information API
+# service = build(
+#     'mybusinessbusinessinformation',    # serviceName
+#     'v1',                               # version
+#     credentials=google_credentials      # user's credentials
+#     )
 
-'''
-Step 3 - Send the request
-'''
-# Create the request
-# https://developers.google.com/my-business/reference/businessinformation/rest/v1/accounts.locations/list
-# here are the fields you can get 
-# https://developers.google.com/my-business/reference/businessinformation/rest/v1/accounts.locations#Location
-fields_we_want = 'name,title,websiteUri,languageCode,phoneNumbers'
-request = service.accounts().locations().list(
-    parent=account,
-    readMask=fields_we_want
-    )
+# '''
+# Step 3 - Send the request
+# '''
+# # Create the request
+# # https://developers.google.com/my-business/reference/businessinformation/rest/v1/accounts.locations/list
+# # here are the fields you can get 
+# # https://developers.google.com/my-business/reference/businessinformation/rest/v1/accounts.locations#Location
+# fields_we_want = 'name,title,websiteUri,languageCode,phoneNumbers'
+# request = service.accounts().locations().list(
+#     parent=account,
+#     readMask=fields_we_want
+#     )
 
-# Execute the request and print the result.
-result = request.execute()
-print("result:")
-print(result)
+# # Execute the request and print the result.
+# result = request.execute()
+# print("result:")
+# print(result)
 
-# get the business_location_id
-business_location_id = result['locations'][0]['name'].split('/')[1]
-print("business_location_id:")
-print(business_location_id)
-# get the business_name
-business_name = result['locations'][0]['title']
-print("business_name:")
-print(business_name)
-# get the phone_number
-phone_number = result['locations'][0]['phoneNumbers']['primaryPhone']
-print("phone_number:")
-print(phone_number)
-# get the final_url
-final_url = result['locations'][0]['websiteUri']
-print("final_url:")
-print(final_url)
+# # get the business_location_id
+# business_location_id = result['locations'][0]['name'].split('/')[1]
+# print("business_location_id:")
+# print(business_location_id)
+# # get the business_name
+# business_name = result['locations'][0]['title']
+# print("business_name:")
+# print(business_name)
+# # get the phone_number
+# phone_number = result['locations'][0]['phoneNumbers']['primaryPhone']
+# print("phone_number:")
+# print(phone_number)
+# # get the final_url
+# final_url = result['locations'][0]['websiteUri']
+# print("final_url:")
+# print(final_url)
 '''
 result:
 {'accounts': [{

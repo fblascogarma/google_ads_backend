@@ -24,7 +24,11 @@ from google.api_core import protobuf_helpers
 from .models import KeywordThemesRecommendations
 from .serializers import KeywordThemesRecommendationsSerializer
 
-def sc_settings(refresh_token, customer_id, campaign_id):
+def sc_settings(
+    refresh_token, 
+    customer_id, 
+    campaign_id,
+    use_login_id):
     '''
     Get the current settings of the campaign to show to the user
     '''
@@ -32,17 +36,29 @@ def sc_settings(refresh_token, customer_id, campaign_id):
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
     GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+    GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-    # Configure using dict (the refresh token will be a dynamic value)
-    credentials = {
-    "developer_token": GOOGLE_DEVELOPER_TOKEN,
-    "refresh_token": refresh_token,
-    "client_id": GOOGLE_CLIENT_ID,
-    "client_secret": GOOGLE_CLIENT_SECRET,
-    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-    "linked_customer_id": customer_id,
-    "use_proto_plus": True}
+    # Configure using dictionary.
+    # Check if we need to use login_customer_id in the headers,
+    # which is needed if the Ads account was created by the app.
+    if use_login_id == True:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        # "linked_customer_id": customer_id,
+        "use_proto_plus": True}
+    else:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        "linked_customer_id": customer_id,
+        "use_proto_plus": True}
 
     client = GoogleAdsClient.load_from_dict(credentials)
 
@@ -254,7 +270,11 @@ def sc_settings(refresh_token, customer_id, campaign_id):
     return campaign_settings
 
 
-def pause_sc(refresh_token, customer_id, campaign_id):
+def pause_sc(
+    refresh_token, 
+    customer_id, 
+    campaign_id,
+    use_login_id):
     '''
     Pause smart campaign - OK
     Parameters needed: credentials, customer_id, campaign_id
@@ -264,17 +284,29 @@ def pause_sc(refresh_token, customer_id, campaign_id):
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
     GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+    GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-    # Configure using dict (the refresh token will be a dynamic value)
-    credentials = {
-    "developer_token": GOOGLE_DEVELOPER_TOKEN,
-    "refresh_token": refresh_token,
-    "client_id": GOOGLE_CLIENT_ID,
-    "client_secret": GOOGLE_CLIENT_SECRET,
-    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-    "linked_customer_id": customer_id,
-    "use_proto_plus": True}
+    # Configure using dictionary.
+    # Check if we need to use login_customer_id in the headers,
+    # which is needed if the Ads account was created by the app.
+    if use_login_id == True:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        # "linked_customer_id": customer_id,
+        "use_proto_plus": True}
+    else:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        "linked_customer_id": customer_id,
+        "use_proto_plus": True}
 
     client = GoogleAdsClient.load_from_dict(credentials)
 
@@ -346,7 +378,11 @@ def pause_sc(refresh_token, customer_id, campaign_id):
     print(status) 
     return status
 
-def enable_sc(refresh_token, customer_id, campaign_id):
+def enable_sc(
+    refresh_token, 
+    customer_id, 
+    campaign_id,
+    use_login_id):
     '''
     Enable smart campaign - OK
     Parameters needed: credentials, customer_id, campaign_id
@@ -355,17 +391,29 @@ def enable_sc(refresh_token, customer_id, campaign_id):
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
     GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+    GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-    # Configure using dict (the refresh token will be a dynamic value)
-    credentials = {
-    "developer_token": GOOGLE_DEVELOPER_TOKEN,
-    "refresh_token": refresh_token,
-    "client_id": GOOGLE_CLIENT_ID,
-    "client_secret": GOOGLE_CLIENT_SECRET,
-    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-    "linked_customer_id": customer_id,
-    "use_proto_plus": True}
+    # Configure using dictionary.
+    # Check if we need to use login_customer_id in the headers,
+    # which is needed if the Ads account was created by the app.
+    if use_login_id == True:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        # "linked_customer_id": customer_id,
+        "use_proto_plus": True}
+    else:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        "linked_customer_id": customer_id,
+        "use_proto_plus": True}
 
     client = GoogleAdsClient.load_from_dict(credentials)
 
@@ -437,7 +485,11 @@ def enable_sc(refresh_token, customer_id, campaign_id):
     print(status) 
     return status
 
-def delete_sc(refresh_token, customer_id, campaign_id):
+def delete_sc(
+    refresh_token, 
+    customer_id, 
+    campaign_id,
+    use_login_id):
     '''
     Remove smart campaign - OK
     Parameters needed: credentials, customer_id, campaign_id
@@ -446,17 +498,29 @@ def delete_sc(refresh_token, customer_id, campaign_id):
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
     GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+    GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-    # Configure using dict (the refresh token will be a dynamic value)
-    credentials = {
-    "developer_token": GOOGLE_DEVELOPER_TOKEN,
-    "refresh_token": refresh_token,
-    "client_id": GOOGLE_CLIENT_ID,
-    "client_secret": GOOGLE_CLIENT_SECRET,
-    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-    "linked_customer_id": customer_id,
-    "use_proto_plus": True}
+    # Configure using dictionary.
+    # Check if we need to use login_customer_id in the headers,
+    # which is needed if the Ads account was created by the app.
+    if use_login_id == True:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        # "linked_customer_id": customer_id,
+        "use_proto_plus": True}
+    else:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        "linked_customer_id": customer_id,
+        "use_proto_plus": True}
 
     client = GoogleAdsClient.load_from_dict(credentials)
 
@@ -512,7 +576,12 @@ def delete_sc(refresh_token, customer_id, campaign_id):
     print(status) 
     return status
 
-def edit_name_sc(refresh_token, customer_id, campaign_id, new_campaign_name):
+def edit_name_sc(
+    refresh_token, 
+    customer_id, 
+    campaign_id, 
+    new_campaign_name,
+    use_login_id):
     '''
     Change name of smart campaign - OK
     Parameters needed: credentials, customer_id, campaign_id, new_campaign_name
@@ -521,17 +590,29 @@ def edit_name_sc(refresh_token, customer_id, campaign_id, new_campaign_name):
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
     GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+    GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-    # Configure using dict (the refresh token will be a dynamic value)
-    credentials = {
-    "developer_token": GOOGLE_DEVELOPER_TOKEN,
-    "refresh_token": refresh_token,
-    "client_id": GOOGLE_CLIENT_ID,
-    "client_secret": GOOGLE_CLIENT_SECRET,
-    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-    "linked_customer_id": customer_id,
-    "use_proto_plus": True}
+    # Configure using dictionary.
+    # Check if we need to use login_customer_id in the headers,
+    # which is needed if the Ads account was created by the app.
+    if use_login_id == True:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        # "linked_customer_id": customer_id,
+        "use_proto_plus": True}
+    else:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        "linked_customer_id": customer_id,
+        "use_proto_plus": True}
 
     client = GoogleAdsClient.load_from_dict(credentials)
 
@@ -592,7 +673,13 @@ def edit_name_sc(refresh_token, customer_id, campaign_id, new_campaign_name):
     print(name) 
     return name
 
-def edit_budget(refresh_token, customer_id, campaign_id, new_budget, budget_id):
+def edit_budget(
+    refresh_token, 
+    customer_id, 
+    campaign_id, 
+    new_budget, 
+    budget_id,
+    use_login_id):
     '''
     Edit budget of smart campaign - OK
     Parameters needed: credentials, customer_id, campaign_id, new_budget (in micros), budget_id
@@ -601,17 +688,29 @@ def edit_budget(refresh_token, customer_id, campaign_id, new_budget, budget_id):
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
     GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+    GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-    # Configure using dict (the refresh token will be a dynamic value)
-    credentials = {
-    "developer_token": GOOGLE_DEVELOPER_TOKEN,
-    "refresh_token": refresh_token,
-    "client_id": GOOGLE_CLIENT_ID,
-    "client_secret": GOOGLE_CLIENT_SECRET,
-    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-    "linked_customer_id": customer_id,
-    "use_proto_plus": True}
+    # Configure using dictionary.
+    # Check if we need to use login_customer_id in the headers,
+    # which is needed if the Ads account was created by the app.
+    if use_login_id == True:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        # "linked_customer_id": customer_id,
+        "use_proto_plus": True}
+    else:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        "linked_customer_id": customer_id,
+        "use_proto_plus": True}
 
     client = GoogleAdsClient.load_from_dict(credentials)
 
@@ -679,7 +778,8 @@ def edit_ad(
     new_headline_2, 
     new_headline_3, 
     new_desc_1,
-    new_desc_2):
+    new_desc_2,
+    use_login_id):
     '''
     Edit ad text - OK
     Parameters needed: credentials, customer_id, campaign_id, new_headline_1,
@@ -689,17 +789,29 @@ def edit_ad(
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
     GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+    GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-    # Configure using dict (the refresh token will be a dynamic value)
-    credentials = {
-    "developer_token": GOOGLE_DEVELOPER_TOKEN,
-    "refresh_token": refresh_token,
-    "client_id": GOOGLE_CLIENT_ID,
-    "client_secret": GOOGLE_CLIENT_SECRET,
-    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-    "linked_customer_id": customer_id,
-    "use_proto_plus": True}
+    # Configure using dictionary.
+    # Check if we need to use login_customer_id in the headers,
+    # which is needed if the Ads account was created by the app.
+    if use_login_id == True:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        # "linked_customer_id": customer_id,
+        "use_proto_plus": True}
+    else:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        "linked_customer_id": customer_id,
+        "use_proto_plus": True}
 
     client = GoogleAdsClient.load_from_dict(credentials)
 
@@ -844,7 +956,8 @@ def edit_keyword_themes(
     refresh_token, 
     customer_id, 
     campaign_id, 
-    new_keywords_list
+    new_keywords_list,
+    use_login_id
     ):
     '''
     Edit keyword themes - PARCIALLY OK
@@ -859,17 +972,29 @@ def edit_keyword_themes(
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
     GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+    GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-    # Configure using dict (the refresh token will be a dynamic value)
-    credentials = {
-    "developer_token": GOOGLE_DEVELOPER_TOKEN,
-    "refresh_token": refresh_token,
-    "client_id": GOOGLE_CLIENT_ID,
-    "client_secret": GOOGLE_CLIENT_SECRET,
-    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-    "linked_customer_id": customer_id,
-    "use_proto_plus": True}
+    # Configure using dictionary.
+    # Check if we need to use login_customer_id in the headers,
+    # which is needed if the Ads account was created by the app.
+    if use_login_id == True:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        # "linked_customer_id": customer_id,
+        "use_proto_plus": True}
+    else:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        "linked_customer_id": customer_id,
+        "use_proto_plus": True}
 
     client = GoogleAdsClient.load_from_dict(credentials)
 
@@ -1100,7 +1225,8 @@ def edit_geo_targets(
     campaign_id,
     new_geo_target_names,
     language_code,
-    country_code):
+    country_code,
+    use_login_id):
     '''
     Edit geo location targeting - OK 
     Parameters needed: credentials, customer_id, campaign_id, new_geo_target_names
@@ -1114,17 +1240,29 @@ def edit_geo_targets(
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
     GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-    # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+    GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-    # Configure using dict (the refresh token will be a dynamic value)
-    credentials = {
-    "developer_token": GOOGLE_DEVELOPER_TOKEN,
-    "refresh_token": refresh_token,
-    "client_id": GOOGLE_CLIENT_ID,
-    "client_secret": GOOGLE_CLIENT_SECRET,
-    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-    "linked_customer_id": customer_id,
-    "use_proto_plus": True}
+    # Configure using dictionary.
+    # Check if we need to use login_customer_id in the headers,
+    # which is needed if the Ads account was created by the app.
+    if use_login_id == True:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        # "linked_customer_id": customer_id,
+        "use_proto_plus": True}
+    else:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        "linked_customer_id": customer_id,
+        "use_proto_plus": True}
 
     client = GoogleAdsClient.load_from_dict(credentials)
 
