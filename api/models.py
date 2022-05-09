@@ -324,3 +324,48 @@ class EditGeoTargets(models.Model):
             self.country_code,
             self.language_code,
             )
+
+# Model to edit campaign ad schedule
+class EditAdSchedule(models.Model):                   
+    # we make the refreshToken optional in case user created account via Fran Ads
+    refreshToken = models.CharField(max_length=500, blank=True)
+    customer_id = models.CharField(max_length=500)
+    campaign_id = models.CharField(max_length=500)
+    # we make the ad schedule optional because we are receiving from the
+    # frontend only those that changed
+    mon_start = models.CharField(max_length=500, blank=True)
+    mon_end = models.CharField(max_length=500, blank=True)
+    tue_start = models.CharField(max_length=500, blank=True)
+    tue_end = models.CharField(max_length=500, blank=True)
+    wed_start = models.CharField(max_length=500, blank=True)
+    wed_end = models.CharField(max_length=500, blank=True)
+    thu_start = models.CharField(max_length=500, blank=True)
+    thu_end = models.CharField(max_length=500, blank=True)
+    fri_start = models.CharField(max_length=500, blank=True)
+    fri_end = models.CharField(max_length=500, blank=True)
+    sat_start = models.CharField(max_length=500, blank=True)
+    sat_end = models.CharField(max_length=500, blank=True)
+    sun_start = models.CharField(max_length=500, blank=True)
+    sun_end = models.CharField(max_length=500, blank=True)
+    
+
+    def __str__(self): 
+        return (
+            self.refreshToken, 
+            self.customer_id, 
+            self.campaign_id, 
+            self.mon_start, 
+            self.mon_end, 
+            self.tue_start, 
+            self.tue_end,
+            self.wed_start, 
+            self.wed_end,
+            self.thu_start, 
+            self.thu_end,
+            self.fri_start, 
+            self.fri_end,
+            self.sat_start, 
+            self.sat_end,
+            self.sun_start, 
+            self.sun_end,
+            )

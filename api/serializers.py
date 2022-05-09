@@ -23,7 +23,8 @@ from .models import (
     CreateSmartCampaign, CampaignSettings,
     CampaignName, EditCampaignBudget,
     SearchTermsReport, EditAdCreative,
-    EditKeywordThemes, EditGeoTargets
+    EditKeywordThemes, EditGeoTargets,
+    EditAdSchedule
     )
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
@@ -207,4 +208,28 @@ class EditGeoTargetsSerializer(serializers.ModelSerializer):
             'new_geo_target_names',
             'country_code',
             'language_code',
+            ]
+
+# Serializer for editing ad schedule
+class EditAdScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EditAdSchedule
+        fields = [
+            'refreshToken', 
+            'customer_id', 
+            'campaign_id', 
+            'mon_start', 
+            'mon_end', 
+            'tue_start', 
+            'tue_end', 
+            'wed_start', 
+            'wed_end', 
+            'thu_start', 
+            'thu_end', 
+            'fri_start', 
+            'fri_end', 
+            'sat_start', 
+            'sat_end', 
+            'sun_start', 
+            'sun_end', 
             ]

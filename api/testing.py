@@ -68,111 +68,602 @@ from pyasn1.type.univ import Null
 # client = GoogleAdsClient.load_from_dict(credentials)
 
 '''
-Link existing Google Ads account to your Manager account (MCC)
+Add ad schedule to a SC
+Schedule detailing which days of the week and time the business is open
+Status = OK
 '''
-from google.ads.googleads.errors import GoogleAdsException
-from google.api_core import protobuf_helpers
-
-customer_id = str(xx)   # id of client account
-
+# use_login_id = False
+# GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+# refresh_token = GOOGLE_REFRESH_TOKEN
+# customer_id = str(2916870939)
+# # campaign_id = str(17074158685)
+# campaign_id = str(16144805216)  # campaign without ad schedule to test
+# start_hour_monday = 9
+# end_hour_monday = 17
+# start_hour_tuesday = 9
+# end_hour_tuesday = 17
+# start_hour_wednesday = 9
+# end_hour_wednesday = 17
+# start_hour_thursday = 9
+# end_hour_thursday = 17
+# start_hour_friday = 9
+# end_hour_friday = 17
+# start_hour_saturday = 9
+# end_hour_saturday = 17
+# start_hour_sunday = 10
+# end_hour_sunday = 14
+# '''
+# Step 1 - Configurations
+# '''
 # # Configurations
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
-GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+# GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+# GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+# GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
 # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
-GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
 
-# Configure using dict (the refresh token will be a dynamic value)
-credentials = {
-"developer_token": GOOGLE_DEVELOPER_TOKEN,
-"refresh_token": GOOGLE_REFRESH_TOKEN,
-"client_id": GOOGLE_CLIENT_ID,
-"client_secret": GOOGLE_CLIENT_SECRET,
+# # Configure using dictionary.
+# # Check if we need to use login_customer_id in the headers,
+# # which is needed if the Ads account was created by the app.
+# if use_login_id == True:
+#     credentials = {
+#     "developer_token": GOOGLE_DEVELOPER_TOKEN,
+#     "refresh_token": refresh_token,
+#     "client_id": GOOGLE_CLIENT_ID,
+#     "client_secret": GOOGLE_CLIENT_SECRET,
+#     "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+#     # "linked_customer_id": customer_id,
+#     "use_proto_plus": True}
+# else:
+#     credentials = {
+#     "developer_token": GOOGLE_DEVELOPER_TOKEN,
+#     "refresh_token": refresh_token,
+#     "client_id": GOOGLE_CLIENT_ID,
+#     "client_secret": GOOGLE_CLIENT_SECRET,
+#     # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+#     "linked_customer_id": customer_id,
+#     "use_proto_plus": True}
+
+# client = GoogleAdsClient.load_from_dict(credentials)
+
+# '''
+# Step 2 - Get current ad schedule for campaign.
+# '''
+# query = (f'''
+# SELECT 
+#     campaign.id, 
+#     campaign_criterion.ad_schedule.day_of_week, 
+#     campaign_criterion.ad_schedule.end_hour, 
+#     campaign_criterion.ad_schedule.start_hour,
+#     campaign_criterion.criterion_id
+# FROM campaign_criterion 
+# WHERE campaign.id = {campaign_id} 
+# ''')
+# googleads_service = client.get_service("GoogleAdsService")
+# response = googleads_service.search_stream(
+#     customer_id=customer_id, 
+#     query=query)
+
+# current_ad_schedule = []
+# current_campaign_criterion_id = []
+# for batch in response:
+#     for row in batch.results:
+#         # the result will be in the format DayOfWeek.MONDAY so transform it
+#         day = str(row.campaign_criterion.ad_schedule.day_of_week).split('.')[1]
+#         # filter out those campaign criterion that are not ad schedule
+#         if day != 'UNSPECIFIED':
+#             data = {}
+#             data['day'] = day
+#             data['start_hour'] = row.campaign_criterion.ad_schedule.start_hour
+#             data['end_hour'] = row.campaign_criterion.ad_schedule.end_hour
+#             current_ad_schedule.append(data)
+#             current_campaign_criterion_id.append(row.campaign_criterion.criterion_id)
+# print("current_ad_schedule:")
+# print(current_ad_schedule)
+
+# '''
+# Step 3 - Remove current ad schedule settings.
+# '''
+# operations = []     # object that will contain all ad schedule operations (create & remove)
+# # create operation to remove them
+# campaign_criterion_service = client.get_service("CampaignCriterionService")
+# for i in current_campaign_criterion_id:
+#     # get the resource name
+#     # that will be in this form: customers/{customer_id}/campaignCriteria/{campaign_id}~{criterion_id}
+#     campaign_criterion_resource_name = campaign_criterion_service.campaign_criterion_path(
+#     customer_id, campaign_id, i
+#     )
+#     # start mutate operation to remove
+#     mutate_operation = client.get_type("MutateOperation")
+#     campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+#     campaign_criterion_operation.remove = campaign_criterion_resource_name
+#     operations.append(mutate_operation)
+
+# '''
+# Step 4 - Create Campaign Criterion for Ad Schedule.
+# AdSchedule is specified as the day of the week and 
+# a time interval within which ads will be shown.
+# '''
+
+# '''
+# Step 4.1 - MONDAY
+# '''
+# mutate_operation = client.get_type("MutateOperation")
+# campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+# campaign_criterion = campaign_criterion_operation.create
+
+# # Set the campaign
+# campaign_service = client.get_service("CampaignService")
+# campaign_criterion.campaign = campaign_service.campaign_path(
+#     customer_id, campaign_id
+# )
+# # Set the criterion type to AD_SCHEDULE.
+# campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+# # Get AdScheduleInfo object for MONDAY.
+# ad_schedule_info = client.get_type("AdScheduleInfo")
+# ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.MONDAY
+# ad_schedule_info.start_hour = start_hour_monday
+# ad_schedule_info.end_hour = end_hour_monday
+# zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+# ad_schedule_info.start_minute = zero_minute_of_hour
+# ad_schedule_info.end_minute = zero_minute_of_hour
+# # Set the ad_schedule to the given ad_schedule.
+# campaign_criterion.ad_schedule = ad_schedule_info
+# operations.append(mutate_operation)
+# '''
+# Step 4.2 - TUESDAY
+# '''
+# mutate_operation = client.get_type("MutateOperation")
+# campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+# campaign_criterion = campaign_criterion_operation.create
+
+# # Set the campaign
+# campaign_service = client.get_service("CampaignService")
+# campaign_criterion.campaign = campaign_service.campaign_path(
+#     customer_id, campaign_id
+# )
+# # Set the criterion type to AD_SCHEDULE.
+# campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+# # Get AdScheduleInfo object for TUESDAY.
+# ad_schedule_info = client.get_type("AdScheduleInfo")
+# ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.TUESDAY
+# ad_schedule_info.start_hour = start_hour_tuesday
+# ad_schedule_info.end_hour = end_hour_tuesday
+# zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+# ad_schedule_info.start_minute = zero_minute_of_hour
+# ad_schedule_info.end_minute = zero_minute_of_hour
+# # Set the ad_schedule to the given ad_schedule.
+# campaign_criterion.ad_schedule = ad_schedule_info
+# operations.append(mutate_operation)
+# '''
+# Step 4.3 - WEDNESDAY
+# '''
+# mutate_operation = client.get_type("MutateOperation")
+# campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+# campaign_criterion = campaign_criterion_operation.create
+
+# # Set the campaign
+# campaign_service = client.get_service("CampaignService")
+# campaign_criterion.campaign = campaign_service.campaign_path(
+#     customer_id, campaign_id
+# )
+# # Set the criterion type to AD_SCHEDULE.
+# campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+# # Get AdScheduleInfo object for WEDNESDAY.
+# ad_schedule_info = client.get_type("AdScheduleInfo")
+# ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.WEDNESDAY
+# ad_schedule_info.start_hour = start_hour_wednesday
+# ad_schedule_info.end_hour = end_hour_wednesday
+# zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+# ad_schedule_info.start_minute = zero_minute_of_hour
+# ad_schedule_info.end_minute = zero_minute_of_hour
+# # Set the ad_schedule to the given ad_schedule.
+# campaign_criterion.ad_schedule = ad_schedule_info
+# operations.append(mutate_operation)
+# '''
+# Step 4.4 - THURSDAY
+# '''
+# mutate_operation = client.get_type("MutateOperation")
+# campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+# campaign_criterion = campaign_criterion_operation.create
+
+# # Set the campaign
+# campaign_service = client.get_service("CampaignService")
+# campaign_criterion.campaign = campaign_service.campaign_path(
+#     customer_id, campaign_id
+# )
+# # Set the criterion type to AD_SCHEDULE.
+# campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+# # Get AdScheduleInfo object for THURSDAY.
+# ad_schedule_info = client.get_type("AdScheduleInfo")
+# ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.THURSDAY
+# ad_schedule_info.start_hour = start_hour_thursday
+# ad_schedule_info.end_hour = end_hour_thursday
+# zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+# ad_schedule_info.start_minute = zero_minute_of_hour
+# ad_schedule_info.end_minute = zero_minute_of_hour
+# # Set the ad_schedule to the given ad_schedule.
+# campaign_criterion.ad_schedule = ad_schedule_info
+# operations.append(mutate_operation)
+# '''
+# Step 4.5 - FRIDAY
+# '''
+# mutate_operation = client.get_type("MutateOperation")
+# campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+# campaign_criterion = campaign_criterion_operation.create
+
+# # Set the campaign
+# campaign_service = client.get_service("CampaignService")
+# campaign_criterion.campaign = campaign_service.campaign_path(
+#     customer_id, campaign_id
+# )
+# # Set the criterion type to AD_SCHEDULE.
+# campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+# # Get AdScheduleInfo object for FRIDAY.
+# ad_schedule_info = client.get_type("AdScheduleInfo")
+# ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.FRIDAY
+# ad_schedule_info.start_hour = start_hour_friday
+# ad_schedule_info.end_hour = end_hour_friday
+# zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+# ad_schedule_info.start_minute = zero_minute_of_hour
+# ad_schedule_info.end_minute = zero_minute_of_hour
+# # Set the ad_schedule to the given ad_schedule.
+# campaign_criterion.ad_schedule = ad_schedule_info
+# operations.append(mutate_operation)
+# '''
+# Step 4.6 - SATURDAY
+# '''
+# mutate_operation = client.get_type("MutateOperation")
+# campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+# campaign_criterion = campaign_criterion_operation.create
+
+# # Set the campaign
+# campaign_service = client.get_service("CampaignService")
+# campaign_criterion.campaign = campaign_service.campaign_path(
+#     customer_id, campaign_id
+# )
+# # Set the criterion type to AD_SCHEDULE.
+# campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+# # Get AdScheduleInfo object for SATURDAY.
+# ad_schedule_info = client.get_type("AdScheduleInfo")
+# ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.SATURDAY
+# ad_schedule_info.start_hour = start_hour_saturday
+# ad_schedule_info.end_hour = end_hour_saturday
+# zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+# ad_schedule_info.start_minute = zero_minute_of_hour
+# ad_schedule_info.end_minute = zero_minute_of_hour
+# # Set the ad_schedule to the given ad_schedule.
+# campaign_criterion.ad_schedule = ad_schedule_info
+# operations.append(mutate_operation)
+# '''
+# Step 4.7 - SUNDAY
+# '''
+# mutate_operation = client.get_type("MutateOperation")
+# campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+# campaign_criterion = campaign_criterion_operation.create
+
+# # Set the campaign
+# campaign_service = client.get_service("CampaignService")
+# campaign_criterion.campaign = campaign_service.campaign_path(
+#     customer_id, campaign_id
+# )
+# # Set the criterion type to AD_SCHEDULE.
+# campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+# # Get AdScheduleInfo object for SUNDAY.
+# ad_schedule_info = client.get_type("AdScheduleInfo")
+# ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.SUNDAY
+# ad_schedule_info.start_hour = start_hour_sunday
+# ad_schedule_info.end_hour = end_hour_sunday
+# zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+# ad_schedule_info.start_minute = zero_minute_of_hour
+# ad_schedule_info.end_minute = zero_minute_of_hour
+# # Set the ad_schedule to the given ad_schedule.
+# campaign_criterion.ad_schedule = ad_schedule_info
+# operations.append(mutate_operation)
+
+# '''
+# Step 5 - Send the mutate operations
+# '''
+# googleads_service = client.get_service("GoogleAdsService")
+
+# print("operations:")
+# print(operations)
+# # Send the operations into a single Mutate request.
+# response = googleads_service.mutate(
+#     customer_id=customer_id,
+#     mutate_operations=[*operations]
+# )
+
+# '''
+# Step 6 - Get updated ad schedule settings
+# '''
+# query = (f'''
+# SELECT 
+#     campaign.id, 
+#     campaign_criterion.ad_schedule.day_of_week, 
+#     campaign_criterion.ad_schedule.end_hour, 
+#     campaign_criterion.ad_schedule.start_hour
+# FROM campaign_criterion 
+# WHERE campaign.id = {campaign_id} 
+# ''')
+# response = googleads_service.search_stream(
+#     customer_id=customer_id, 
+#     query=query)
+
+# new_ad_schedule = []
+# for batch in response:
+#     for row in batch.results:
+#         # the result will be in the format DayOfWeek.MONDAY so transform it
+#         day = str(row.campaign_criterion.ad_schedule.day_of_week).split('.')[1]
+#         # filter out those campaign criterion that are not ad schedule
+#         if day != 'UNSPECIFIED':
+#             data = {}
+#             data['day'] = day
+#             data['start_hour'] = row.campaign_criterion.ad_schedule.start_hour
+#             data['end_hour'] = row.campaign_criterion.ad_schedule.end_hour
+#             new_ad_schedule.append(data)
+# print("new_ad_schedule:")
+# print(new_ad_schedule)
+# '''
+# [
+#     {
+#         'day': 'MONDAY', 
+#         'start_hour': 9, 
+#         'end_hour': 17
+#     }, 
+#     {
+#         'day': 'TUESDAY', 
+#         'start_hour': 9, 
+#         'end_hour': 17
+#     }, 
+#     {
+#         'day': 'WEDNESDAY', 
+#         'start_hour': 9, 
+#         'end_hour': 17
+#     }, 
+#     {
+#         'day': 'THURSDAY', 
+#         'start_hour': 9, 
+#         'end_hour': 17
+#     }, 
+#     {
+#         'day': 'FRIDAY', 
+#         'start_hour': 9, 
+#         'end_hour': 17
+#     }, 
+#     {
+#         'day': 'SATURDAY', 
+#         'start_hour': 9, 
+#         'end_hour': 17
+#     }, 
+#     {
+#         'day': 'SUNDAY', 
+#         'start_hour': 9, 
+#         'end_hour': 17
+#     }
+# ]
+# '''
+
+'''
+Link existing Google Ads account to your Manager account (MCC)
+Status = INVALID_CUSTOMER_ID error
+'''
+# from google.ads.googleads.errors import GoogleAdsException
+# from google.api_core import protobuf_helpers
+
+# # test account credentials
+# # BenjenClegane.507717@gmail.com
+# customer_id = str(6341155848)   # id of client account
+# test_acc_refresh_token = 'UPDATE_REFRESH_TOKEN_USER'
+
+# # # Configurations
+# GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+# GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+# GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+# GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+# GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+
+# '''
+# Step 1 - Use app's credentials to send link request from Manager to Client
+# '''
+# # Configure using dict (the refresh token will be a dynamic value)
+# credentials = {
+# "developer_token": GOOGLE_DEVELOPER_TOKEN,
+# "refresh_token": GOOGLE_REFRESH_TOKEN,
+# "client_id": GOOGLE_CLIENT_ID,
+# "client_secret": GOOGLE_CLIENT_SECRET,
 # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-"linked_customer_id": customer_id,
-"use_proto_plus": True}
+# # "linked_customer_id": customer_id,
+# "use_proto_plus": True}
 
-client = GoogleAdsClient.load_from_dict(credentials)
+# client = GoogleAdsClient.load_from_dict(credentials)
+# print('client initiated...')
 
-manager_customer_id = GOOGLE_CLIENT_ID  # id of manager account
+# manager_customer_id = GOOGLE_LOGIN_CUSTOMER_ID  # id of manager account
 
-customer_client_link_service = client.get_service(
-    "CustomerClientLinkService"
-)
+# customer_client_link_service = client.get_service(
+#     "CustomerClientLinkService"
+# )
 
-# Extend an invitation to the client while authenticating as the manager.
-client_link_operation = client.get_type("CustomerClientLinkOperation")
-client_link = client_link_operation.create
-client_link.client_customer = customer_client_link_service.customer_path(
-    customer_id
-)
-client_link.status = client.enums.ManagerLinkStatusEnum.PENDING
+# # Extend an invitation to the client while authenticating as the manager.
+# client_link_operation = client.get_type("CustomerClientLinkOperation")
+# client_link = client_link_operation.create
+# client_link.client_customer = customer_client_link_service.customer_path(
+#     customer_id
+# )
+# client_link.status = client.enums.ManagerLinkStatusEnum.PENDING
+# print("client_link_operation:")
+# print(client_link_operation)
+# '''
+# create {
+#   status: PENDING
+#   client_customer: "customers/6341155848"
+# }
+# '''
 
-response = customer_client_link_service.mutate_customer_client_link(
-    customer_id=manager_customer_id, operation=client_link_operation
-)
-resource_name = response.results[0].resource_name
+# response = customer_client_link_service.mutate_customer_client_link(
+#     customer_id=manager_customer_id, operation=client_link_operation
+# )
+# print("response on sending invite from Manager to Client:")
+# print(response)
+# '''
+# result {
+#   resource_name: "customers/4642579541/customerClientLinks/6341155848~257046870"
+# }
+# '''
+# resource_name = response.result.resource_name
+# # resource_name = response.result[0].resource_name
+# '''
+# AttributeError: 'results'
+# TypeError: 'MutateCustomerClientLinkResult' object is not subscriptable
+# '''
 
-print(
-    f'Extended an invitation from customer "{manager_customer_id}" to '
-    f'customer "{customer_id}" with client link resource_name '
-    f'"{resource_name}"'
-)
+# print(
+#     f'Extended an invitation from customer "{manager_customer_id}" to '
+#     f'customer "{customer_id}" with client link resource_name '
+#     f'"{resource_name}"'
+# )
 
-# Find the manager_link_id of the link we just created, so we can construct
-# the resource name for the link from the client side. Note that since we
-# are filtering by resource_name, a unique identifier, only one
-# customer_client_link resource will be returned in the response
-query = f'''
-    SELECT
-        customer_client_link.manager_link_id
-    FROM
-        customer_client_link
-    WHERE
-        customer_client_link.resource_name = "{resource_name}"'''
+# # Find the manager_link_id of the link we just created, so we can construct
+# # the resource name for the link from the client side. Note that since we
+# # are filtering by resource_name, a unique identifier, only one
+# # customer_client_link resource will be returned in the response
+# query = f'''
+#     SELECT
+#         customer_client_link.manager_link_id
+#     FROM
+#         customer_client_link
+#     WHERE
+#         customer_client_link.resource_name = "{resource_name}"'''
 
-ga_service = client.get_service("GoogleAdsService")
+# ga_service = client.get_service("GoogleAdsService")
 
-try:
-    response = ga_service.search(
-        customer_id=manager_customer_id, query=query
-    )
-    # Since the googleads_service.search method returns an iterator we need
-    # to initialize an iteration in order to retrieve results, even though
-    # we know the query will only return a single row.
-    for row in response.result:
-        manager_link_id = row.customer_client_link.manager_link_id
-except GoogleAdsException as ex:
-    print(ex)
-    # _handle_googleads_exception(ex)
+# try:
+#     response = ga_service.search(
+#         customer_id=manager_customer_id, query=query
+#     )
+#     # Since the googleads_service.search method returns an iterator we need
+#     # to initialize an iteration in order to retrieve results, even though
+#     # we know the query will only return a single row.
+#     for row in response:
+#         manager_link_id = row.customer_client_link.manager_link_id
+#         print("manager_link_id:")
+#         print(manager_link_id)
+#         '''
+#         manager_link_id:
+#         257046870
+#         '''
+#     '''
+#     for row in response.result:
+#         manager_link_id = row.customer_client_link.manager_link_id
+#     AttributeError: 'result'
+#     '''
+# except GoogleAdsException as ex:
+#     print(ex)
+#     # _handle_googleads_exception(ex)   # this function is not defined
 
-customer_manager_link_service = client.get_service(
-    "CustomerManagerLinkService"
-)
-manager_link_operation = client.get_type("CustomerManagerLinkOperation")
-manager_link = manager_link_operation.update
-manager_link.resource_name = (
-    customer_manager_link_service.customer_manager_link_path(
-        customer_id,
-        manager_customer_id,
-        manager_link_id,
-    )
-)
+# '''
+# Step 2 - Use client's refresh token to accept link invitation
+# '''
+# # Configure using dict (the refresh token will be a dynamic value)
+# credentials = {
+# "developer_token": GOOGLE_DEVELOPER_TOKEN,
+# "refresh_token": test_acc_refresh_token,
+# "client_id": GOOGLE_CLIENT_ID,
+# "client_secret": GOOGLE_CLIENT_SECRET,
+# # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+# "login_customer_id": customer_id,
+# # "linked_customer_id": customer_id,
+# "use_proto_plus": True}
+# # Configure using dict (the refresh token will be a dynamic value)
+# # credentials = {
+# # "developer_token": GOOGLE_DEVELOPER_TOKEN,
+# # "refresh_token": GOOGLE_REFRESH_TOKEN,
+# # "client_id": GOOGLE_CLIENT_ID,
+# # "client_secret": GOOGLE_CLIENT_SECRET,
+# # # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+# # "linked_customer_id": customer_id,
+# # "use_proto_plus": True}
 
-manager_link.status = client.enums.ManagerLinkStatusEnum.ACTIVE
-client.copy_from(
-    manager_link_operation.update_mask,
-    protobuf_helpers.field_mask(None, manager_link._pb),
-)
+# # client = GoogleAdsClient.load_from_dict(credentials)
+# print('client initiated...')
+# customer_manager_link_service = client.get_service(
+#     "CustomerManagerLinkService"
+# )
+# manager_link_operation = client.get_type("CustomerManagerLinkOperation")
+# manager_link = manager_link_operation.update
+# manager_link.resource_name = (
+#     customer_manager_link_service.customer_manager_link_path(
+#         customer_id,
+#         manager_customer_id,
+#         manager_link_id,
+#     )
+# )
 
-response = customer_manager_link_service.mutate_customer_manager_link(
-    customer_id=manager_customer_id, operations=[manager_link_operation]
-)
-print(
-    "Client accepted invitation with resource_name: "
-    f'"{response.results[0].resource_name}"'
-)
-# [END link_manager_to_client]
+# manager_link.status = client.enums.ManagerLinkStatusEnum.ACTIVE
+# client.copy_from(
+#     manager_link_operation.update_mask,
+#     protobuf_helpers.field_mask(None, manager_link._pb),
+# )
+# print("manager_link_operation:")
+# print(manager_link_operation)
+# '''
+# manager_link_operation:
+# update {
+#   resource_name: "customers/6341155848/customerManagerLinks/4642579541~257046870"
+#   status: ACTIVE
+# }
+# update_mask {
+#   paths: "resource_name"
+#   paths: "status"
+# }
+# '''
+
+# response = customer_manager_link_service.mutate_customer_manager_link(
+#     customer_id=manager_customer_id, operations=[manager_link_operation]
+# )
+# '''
+# Getting an error in the above request
+# Request made: 
+# ClientCustomerId: 4642579541, 
+# Host: googleads.googleapis.com, 
+# Method: /google.ads.googleads.v9.services.CustomerManagerLinkService/MutateCustomerManagerLink, 
+# RequestId: cKbBRP3j7wPmG-4wq4t9wA, 
+# IsFault: True, 
+# FaultMessage: Invalid customer ID '6341155848'.
+
+# errors {
+#   error_code {
+#     request_error: INVALID_CUSTOMER_ID
+#   }
+#   message: "Invalid customer ID \'6341155848\'."
+#   location {
+#     field_path_elements {
+#       field_name: "operations"
+#       index: 0
+#     }
+#     field_path_elements {
+#       field_name: "update"
+#     }
+#     field_path_elements {
+#       field_name: "resource_name"
+#     }
+#   }
+# }
+# '''
+# print("response when Client accepts invite link:")
+# print(response)
+# print(
+#     "Client accepted invitation with resource_name: "
+#     f'"{response.results[0].resource_name}"'
+# )
+# # [END link_manager_to_client]
 
 
 '''

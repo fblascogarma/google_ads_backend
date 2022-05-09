@@ -263,6 +263,32 @@ def sc_settings(
     # eliminate duplicates and add unique values only
     data["keyword_themes"] = list(dict.fromkeys(keyword_theme_display_name_list))
 
+    # get current ad schedule settings
+    query = (f'''
+        SELECT 
+            campaign.id, 
+            campaign_criterion.ad_schedule.day_of_week, 
+            campaign_criterion.ad_schedule.end_hour, 
+            campaign_criterion.ad_schedule.start_hour,
+            campaign_criterion.criterion_id
+        FROM campaign_criterion 
+        WHERE campaign.id = {campaign_id} 
+        ''')
+    googleads_service = client.get_service("GoogleAdsService")
+    response = googleads_service.search_stream(
+        customer_id=customer_id, 
+        query=query)
+
+    for batch in response:
+        for row in batch.results:
+            # the result will be in the format DayOfWeek.MONDAY so transform it
+            day = str(row.campaign_criterion.ad_schedule.day_of_week).split('.')[1]
+            # filter out those campaign criterion that are not ad schedule
+            if day != 'UNSPECIFIED':
+                data[f'{day}'] = day
+                data[f'{day}_start_hour'] = row.campaign_criterion.ad_schedule.start_hour
+                data[f'{day}_end_hour'] = row.campaign_criterion.ad_schedule.end_hour
+
     # append all the data to the campaign_settings object
     campaign_settings.append(data)
     json.dumps(campaign_settings)
@@ -1514,3 +1540,417 @@ def edit_geo_targets(
     json.dumps(geo_target_names)
 
     return(geo_target_names)
+
+def edit_ad_schedule(
+    refresh_token, 
+    customer_id, 
+    campaign_id, 
+    mon_start,
+    mon_end,
+    tue_start,
+    tue_end,
+    wed_start,
+    wed_end,
+    thu_start,
+    thu_end,
+    fri_start,
+    fri_end,
+    sat_start,
+    sat_end,
+    sun_start,
+    sun_end,
+    use_login_id
+    ):
+    '''
+    Step 1 - Configurations
+    '''
+
+    # Configurations
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+    GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+    GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+
+    # Configure using dictionary.
+    # Check if we need to use login_customer_id in the headers,
+    # which is needed if the Ads account was created by the app.
+    if use_login_id == True:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        # "linked_customer_id": customer_id,
+        "use_proto_plus": True}
+    else:
+        credentials = {
+        "developer_token": GOOGLE_DEVELOPER_TOKEN,
+        "refresh_token": refresh_token,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        "linked_customer_id": customer_id,
+        "use_proto_plus": True}
+
+    client = GoogleAdsClient.load_from_dict(credentials)
+
+    '''
+    Step 2 - Get the criterion_id for those days that need to change.
+    '''
+    query = (f'''
+    SELECT 
+        campaign.id, 
+        campaign_criterion.ad_schedule.day_of_week, 
+        campaign_criterion.ad_schedule.end_hour, 
+        campaign_criterion.ad_schedule.start_hour,
+        campaign_criterion.criterion_id
+    FROM campaign_criterion 
+    WHERE campaign.id = {campaign_id} 
+    ''')
+    googleads_service = client.get_service("GoogleAdsService")
+    response = googleads_service.search_stream(
+        customer_id=customer_id, 
+        query=query)
+
+    current_ad_schedule = []
+    current_campaign_criterion_id = []
+    data = {}
+    for batch in response:
+        for row in batch.results:
+            # the result will be in the format DayOfWeek.MONDAY so transform it
+            day = str(row.campaign_criterion.ad_schedule.day_of_week).split('.')[1]
+            # filter out those campaign criterion that are not ad schedule
+            if day != 'UNSPECIFIED':
+                data[f'{day}'] = day
+                data[f'{day}_start_hour'] = row.campaign_criterion.ad_schedule.start_hour
+                data[f'{day}_end_hour'] = row.campaign_criterion.ad_schedule.end_hour
+                current_ad_schedule.append(data)
+                # append criterion_id of those days that need change
+                if day=="MONDAY" and (mon_start != -1 or mon_end != -1):
+                    current_campaign_criterion_id.append(
+                        row.campaign_criterion.criterion_id
+                        )
+                if day=="TUESDAY" and (tue_start != -1 or tue_end != -1):
+                    current_campaign_criterion_id.append(
+                        row.campaign_criterion.criterion_id
+                        )
+                if day=="WEDNESDAY" and (wed_start != -1 or wed_end != -1):
+                    current_campaign_criterion_id.append(
+                        row.campaign_criterion.criterion_id
+                        )
+                if day=="THURSDAY" and (thu_start != -1 or thu_end != -1):
+                    current_campaign_criterion_id.append(
+                        row.campaign_criterion.criterion_id
+                        )
+                if day=="FRIDAY" and (fri_start != -1 or fri_end != -1):
+                    current_campaign_criterion_id.append(
+                        row.campaign_criterion.criterion_id
+                        )
+                if day=="SATURDAY" and (sat_start != -1 or sat_end != -1):
+                    current_campaign_criterion_id.append(
+                        row.campaign_criterion.criterion_id
+                        )
+                if day=="SUNDAY" and (sun_start != -1 or sun_end != -1):
+                    current_campaign_criterion_id.append(
+                        row.campaign_criterion.criterion_id
+                        )
+    print("current_ad_schedule:")
+    print(current_ad_schedule)
+
+    '''
+    Step 3 - Remove current ad schedule settings for the days that had changes.
+    '''
+    operations = []     # object that will contain all ad schedule operations (create & remove)
+    # create operation to remove them
+    campaign_criterion_service = client.get_service("CampaignCriterionService")
+    for i in current_campaign_criterion_id:
+        # get the resource name
+        # that will be in this form: customers/{customer_id}/campaignCriteria/{campaign_id}~{criterion_id}
+        campaign_criterion_resource_name = campaign_criterion_service.campaign_criterion_path(
+        customer_id, campaign_id, i
+        )
+        # start mutate operation to remove
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+        campaign_criterion_operation.remove = campaign_criterion_resource_name
+        operations.append(mutate_operation)
+
+    '''
+    Step 4 - Create Campaign Criterion for Ad Schedule of those days that need change.
+    AdSchedule is specified as the day of the week and 
+    a time interval within which ads will be shown.
+    '''
+
+    '''
+    Step 4.1 - MONDAY
+    '''
+    if mon_start != -1 or mon_end != -1:
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+        campaign_criterion = campaign_criterion_operation.create
+
+        # Set the campaign
+        campaign_service = client.get_service("CampaignService")
+        campaign_criterion.campaign = campaign_service.campaign_path(
+            customer_id, campaign_id
+        )
+        # Set the criterion type to AD_SCHEDULE.
+        campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+        # Get AdScheduleInfo object for MONDAY.
+        ad_schedule_info = client.get_type("AdScheduleInfo")
+        ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.MONDAY
+        # check if user changed start hour (-1 means user did not change it)
+        if mon_start != -1:
+            ad_schedule_info.start_hour = mon_start
+        else: ad_schedule_info.start_hour = data['MONDAY_start_hour']
+        if mon_end != -1:
+            ad_schedule_info.end_hour = mon_end
+        else: ad_schedule_info.end_hour = data['MONDAY_end_hour']
+        zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+        ad_schedule_info.start_minute = zero_minute_of_hour
+        ad_schedule_info.end_minute = zero_minute_of_hour
+        # Set the ad_schedule to the given ad_schedule.
+        campaign_criterion.ad_schedule = ad_schedule_info
+        operations.append(mutate_operation)
+    '''
+    Step 4.2 - TUESDAY
+    '''
+    if tue_start != -1 or tue_end != -1:
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+        campaign_criterion = campaign_criterion_operation.create
+
+        # Set the campaign
+        campaign_service = client.get_service("CampaignService")
+        campaign_criterion.campaign = campaign_service.campaign_path(
+            customer_id, campaign_id
+        )
+        # Set the criterion type to AD_SCHEDULE.
+        campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+        # Get AdScheduleInfo object for TUESDAY.
+        ad_schedule_info = client.get_type("AdScheduleInfo")
+        ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.TUESDAY
+        # check if user changed start hour (-1 means user did not change it)
+        if tue_start != -1:
+            ad_schedule_info.start_hour = tue_start
+        else: ad_schedule_info.start_hour = data['TUESDAY_start_hour']
+        if tue_end != -1:
+            ad_schedule_info.end_hour = tue_end
+        else: ad_schedule_info.end_hour = data['TUESDAY_end_hour']
+        zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+        ad_schedule_info.start_minute = zero_minute_of_hour
+        ad_schedule_info.end_minute = zero_minute_of_hour
+        # Set the ad_schedule to the given ad_schedule.
+        campaign_criterion.ad_schedule = ad_schedule_info
+        operations.append(mutate_operation)
+    '''
+    Step 4.3 - WEDNESDAY
+    '''
+    if wed_start != -1 or wed_end != -1:
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+        campaign_criterion = campaign_criterion_operation.create
+
+        # Set the campaign
+        campaign_service = client.get_service("CampaignService")
+        campaign_criterion.campaign = campaign_service.campaign_path(
+            customer_id, campaign_id
+        )
+        # Set the criterion type to AD_SCHEDULE.
+        campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+        # Get AdScheduleInfo object for WEDNESDAY.
+        ad_schedule_info = client.get_type("AdScheduleInfo")
+        ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.WEDNESDAY
+        # check if user changed start hour (-1 means user did not change it)
+        if wed_start != -1:
+            ad_schedule_info.start_hour = wed_start
+        else: ad_schedule_info.start_hour = data['WEDNESDAY_start_hour']
+        if wed_end != -1:
+            ad_schedule_info.end_hour = wed_end
+        else: ad_schedule_info.end_hour = data['WEDNESDAY_end_hour']
+        zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+        ad_schedule_info.start_minute = zero_minute_of_hour
+        ad_schedule_info.end_minute = zero_minute_of_hour
+        # Set the ad_schedule to the given ad_schedule.
+        campaign_criterion.ad_schedule = ad_schedule_info
+        operations.append(mutate_operation)
+    '''
+    Step 4.4 - THURSDAY
+    '''
+    if thu_start != -1 or thu_end != -1:
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+        campaign_criterion = campaign_criterion_operation.create
+
+        # Set the campaign
+        campaign_service = client.get_service("CampaignService")
+        campaign_criterion.campaign = campaign_service.campaign_path(
+            customer_id, campaign_id
+        )
+        # Set the criterion type to AD_SCHEDULE.
+        campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+        # Get AdScheduleInfo object for THURSDAY.
+        ad_schedule_info = client.get_type("AdScheduleInfo")
+        ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.THURSDAY
+        # check if user changed start hour (-1 means user did not change it)
+        if thu_start != -1:
+            ad_schedule_info.start_hour = thu_start
+        else: ad_schedule_info.start_hour = data['THURSDAY_start_hour']
+        if thu_end != -1:
+            ad_schedule_info.end_hour = thu_end
+        else: ad_schedule_info.end_hour = data['THURSDAY_end_hour']
+        zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+        ad_schedule_info.start_minute = zero_minute_of_hour
+        ad_schedule_info.end_minute = zero_minute_of_hour
+        # Set the ad_schedule to the given ad_schedule.
+        campaign_criterion.ad_schedule = ad_schedule_info
+        operations.append(mutate_operation)
+    '''
+    Step 4.5 - FRIDAY
+    '''
+    if fri_start != -1 or fri_end != -1:
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+        campaign_criterion = campaign_criterion_operation.create
+
+        # Set the campaign
+        campaign_service = client.get_service("CampaignService")
+        campaign_criterion.campaign = campaign_service.campaign_path(
+            customer_id, campaign_id
+        )
+        # Set the criterion type to AD_SCHEDULE.
+        campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+        # Get AdScheduleInfo object for FRIDAY.
+        ad_schedule_info = client.get_type("AdScheduleInfo")
+        ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.FRIDAY
+        # check if user changed start hour (-1 means user did not change it)
+        if fri_start != -1:
+            ad_schedule_info.start_hour = fri_start
+        else: ad_schedule_info.start_hour = data['FRIDAY_start_hour']
+        if fri_end != -1:
+            ad_schedule_info.end_hour = fri_end
+        else: ad_schedule_info.end_hour = data['FRIDAY_end_hour']
+        zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+        ad_schedule_info.start_minute = zero_minute_of_hour
+        ad_schedule_info.end_minute = zero_minute_of_hour
+        # Set the ad_schedule to the given ad_schedule.
+        campaign_criterion.ad_schedule = ad_schedule_info
+        operations.append(mutate_operation)
+    '''
+    Step 4.6 - SATURDAY
+    '''
+    if sat_start != -1 or sat_end != -1:
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+        campaign_criterion = campaign_criterion_operation.create
+
+        # Set the campaign
+        campaign_service = client.get_service("CampaignService")
+        campaign_criterion.campaign = campaign_service.campaign_path(
+            customer_id, campaign_id
+        )
+        # Set the criterion type to AD_SCHEDULE.
+        campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+        # Get AdScheduleInfo object for SATURDAY.
+        ad_schedule_info = client.get_type("AdScheduleInfo")
+        ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.SATURDAY
+        # check if user changed start hour (-1 means user did not change it)
+        if sat_start != -1:
+            ad_schedule_info.start_hour = sat_start
+        else: ad_schedule_info.start_hour = data['SATURDAY_start_hour']
+        if sat_end != -1:
+            ad_schedule_info.end_hour = sat_end
+        else: ad_schedule_info.end_hour = data['SATURDAY_end_hour']
+        zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+        ad_schedule_info.start_minute = zero_minute_of_hour
+        ad_schedule_info.end_minute = zero_minute_of_hour
+        # Set the ad_schedule to the given ad_schedule.
+        campaign_criterion.ad_schedule = ad_schedule_info
+        operations.append(mutate_operation)
+    '''
+    Step 4.7 - SUNDAY
+    '''
+    if sun_start != -1 or sun_end != -1:
+        mutate_operation = client.get_type("MutateOperation")
+        campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+        campaign_criterion = campaign_criterion_operation.create
+
+        # Set the campaign
+        campaign_service = client.get_service("CampaignService")
+        campaign_criterion.campaign = campaign_service.campaign_path(
+            customer_id, campaign_id
+        )
+        # Set the criterion type to AD_SCHEDULE.
+        campaign_criterion.type_ = client.enums.CriterionTypeEnum.AD_SCHEDULE
+        # Get AdScheduleInfo object for SUNDAY.
+        ad_schedule_info = client.get_type("AdScheduleInfo")
+        ad_schedule_info.day_of_week = client.enums.DayOfWeekEnum.SUNDAY
+        # check if user changed start hour (-1 means user did not change it)
+        if sun_start != -1:
+            ad_schedule_info.start_hour = sun_start
+        else: ad_schedule_info.start_hour = data['SUNDAY_start_hour']
+        if sun_end != -1:
+            ad_schedule_info.end_hour = sun_end
+        else: ad_schedule_info.end_hour = data['SUNDAY_end_hour']
+        zero_minute_of_hour = client.enums.MinuteOfHourEnum.ZERO
+        ad_schedule_info.start_minute = zero_minute_of_hour
+        ad_schedule_info.end_minute = zero_minute_of_hour
+        # Set the ad_schedule to the given ad_schedule.
+        campaign_criterion.ad_schedule = ad_schedule_info
+        operations.append(mutate_operation)
+
+    '''
+    Step 5 - Send the mutate operations
+    '''
+    googleads_service = client.get_service("GoogleAdsService")
+
+    print("operations:")
+    print(operations)
+    # Send the operations into a single Mutate request.
+    response = googleads_service.mutate(
+        customer_id=customer_id,
+        mutate_operations=[*operations]
+    )
+
+    '''
+    Step 6 - Get updated ad schedule settings
+    '''
+    query = (f'''
+    SELECT 
+        campaign.id, 
+        campaign_criterion.ad_schedule.day_of_week, 
+        campaign_criterion.ad_schedule.end_hour, 
+        campaign_criterion.ad_schedule.start_hour
+    FROM campaign_criterion 
+    WHERE campaign.id = {campaign_id} 
+    ''')
+    response = googleads_service.search_stream(
+        customer_id=customer_id, 
+        query=query)
+
+    new_ad_schedule = []
+    data = {}
+    for batch in response:
+        for row in batch.results:
+            # the result will be in the format DayOfWeek.MONDAY so transform it
+            day = str(row.campaign_criterion.ad_schedule.day_of_week).split('.')[1]
+            # filter out those campaign criterion that are not ad schedule
+            if day != 'UNSPECIFIED':
+                data[f'{day}'] = day
+                data[f'{day}_start_hour'] = row.campaign_criterion.ad_schedule.start_hour
+                data[f'{day}_end_hour'] = row.campaign_criterion.ad_schedule.end_hour
+                
+    new_ad_schedule.append(data)
+    json.dumps(new_ad_schedule)
+    print("new_ad_schedule:")
+    print(new_ad_schedule)
+
+    return new_ad_schedule

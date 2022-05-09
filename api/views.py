@@ -36,7 +36,8 @@ from .serializers import (
     SearchTermsReportSerializer,
     EditAdCreativeSerializer,
     EditKeywordThemesSerializer,
-    EditGeoTargetsSerializer
+    EditGeoTargetsSerializer,
+    EditAdScheduleSerializer
     )
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -61,7 +62,7 @@ from .edit_sc import (
     delete_sc, sc_settings, enable_sc, 
     pause_sc, delete_sc, edit_name_sc,
     edit_budget, edit_ad, edit_keyword_themes,
-    edit_geo_targets
+    edit_geo_targets, edit_ad_schedule
     )
 from .get_search_terms_report import search_terms_report
 from .get_gmb import business_profile
@@ -1270,6 +1271,111 @@ def edit_geo_target(request):
             print(updated_geo_targets)
 
             response = JsonResponse(updated_geo_targets, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Edit smart campaign ad schedule
+@api_view(['POST'])
+def edit_ad_schedule_campaign(request):
+    if request.method == 'POST':
+        serializer = EditAdScheduleSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            '''
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+                use_login_id = True
+            else: 
+                refresh_token = serializer['refreshToken'].value
+                use_login_id = False
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            # get the new ad schedules
+            if serializer['mon_start'].value == '':
+                mon_start = -1
+            else:
+                mon_start = int(serializer['mon_start'].value)
+            if serializer['mon_end'].value == '':
+                mon_end = -1
+            else:
+                mon_end = int(serializer['mon_end'].value)
+            if serializer['tue_start'].value == '':
+                tue_start = -1
+            else:
+                tue_start = int(serializer['tue_start'].value)
+            if serializer['tue_end'].value == '':
+                tue_end = -1
+            else:
+                tue_end = int(serializer['tue_end'].value)
+            if serializer['wed_start'].value == '':
+                wed_start = -1
+            else:
+                wed_start = int(serializer['wed_start'].value)
+            if serializer['wed_end'].value == '':
+                wed_end = -1
+            else:
+                wed_end = int(serializer['wed_end'].value)
+            if serializer['thu_start'].value == '':
+                thu_start = -1
+            else:
+                thu_start = int(serializer['thu_start'].value)
+            if serializer['thu_end'].value == '':
+                thu_end = -1
+            else:
+                thu_end = int(serializer['thu_end'].value)
+            if serializer['fri_start'].value == '':
+                fri_start = -1
+            else:
+                fri_start = int(serializer['fri_start'].value)
+            if serializer['fri_end'].value == '':
+                fri_end = -1
+            else:
+                fri_end = int(serializer['fri_end'].value)
+            if serializer['sat_start'].value == '':
+                sat_start = -1
+            else:
+                sat_start = int(serializer['sat_start'].value)
+            if serializer['sat_end'].value == '':
+                sat_end = -1
+            else:
+                sat_end = int(serializer['sat_end'].value)
+            if serializer['sun_start'].value == '':
+                sun_start = -1
+            else:
+                sun_start = int(serializer['sun_start'].value)
+            if serializer['sun_end'].value == '':
+                sun_end = -1
+            else:
+                sun_end = int(serializer['sun_end'].value)
+
+            # call the function to edit ad schedule
+            updated_ad_schedule = edit_ad_schedule(
+                refresh_token, customer_id, campaign_id, 
+                mon_start, mon_end, tue_start, tue_end,
+                wed_start, wed_end, thu_start, thu_end,
+                fri_start, fri_end, sat_start, sat_end,
+                sun_start, sun_end, use_login_id
+                )
+            print("updated_ad_schedule:")
+            print(updated_ad_schedule)
+
+            response = JsonResponse(updated_ad_schedule, safe=False)
            
             return response
         return Response(data="bad request")
