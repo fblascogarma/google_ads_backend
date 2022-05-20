@@ -38,7 +38,8 @@ from .views import (
     edit_keywords,
     get_business_info,
     edit_geo_target,
-    edit_ad_schedule_campaign
+    edit_ad_schedule_campaign,
+    link_accounts
     )
 from rest_framework.routers import DefaultRouter
 
@@ -74,4 +75,5 @@ urlpatterns = [
     path('api/get-business-info/', get_business_info),
     path('api/sc-settings/edit-geo-targets/', edit_geo_target),
     path('api/sc-settings/edit-ad-schedule/', edit_ad_schedule_campaign),
+    path('api/link-accounts/', link_accounts),
 ]

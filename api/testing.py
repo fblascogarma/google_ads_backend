@@ -68,6 +68,147 @@ from pyasn1.type.univ import Null
 # client = GoogleAdsClient.load_from_dict(credentials)
 
 '''
+Check if client account is linked to MCC,
+so if it is not, execute the link.
+Status = OK
+'''
+from google.ads.googleads.client import GoogleAdsClient
+from google.ads.googleads.errors import GoogleAdsException
+
+
+# customer_id = "user_client_id"
+GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+refresh_token = GOOGLE_REFRESH_TOKEN
+
+# Configurations
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+# GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+
+credentials = {
+    "developer_token": GOOGLE_DEVELOPER_TOKEN,
+    "refresh_token": refresh_token,
+    "client_id": GOOGLE_CLIENT_ID,
+    "client_secret": GOOGLE_CLIENT_SECRET,
+    # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+    # "login_customer_id": customer_id,
+    # "linked_customer_id": customer_id,
+    "use_proto_plus": True}
+
+client = GoogleAdsClient.load_from_dict(credentials)
+
+customer_service = client.get_service("CustomerService")
+ga_service = client.get_service("GoogleAdsService")
+
+accessible_customers = customer_service.list_accessible_customers()
+
+resource_names = accessible_customers.resource_names
+
+customer_data = []
+for resource_name in resource_names:
+    try:
+        customer_id = resource_name.split('/')[1]
+        query = (f'''
+            SELECT 
+                customer.currency_code, 
+                customer.descriptive_name, 
+                customer.id, 
+                customer.manager, 
+                customer.resource_name, 
+                customer.time_zone
+            FROM customer
+            WHERE customer.resource_name = '{resource_name}'
+            '''
+        )
+        stream = ga_service.search_stream(
+            customer_id=customer_id,
+            query=query
+        )
+
+        for batch in stream:
+            for row in batch.results:
+                data = {}
+                data["customer_id"] = row.customer.id
+                data["description"] = row.customer.descriptive_name
+                data["time_zone"] = row.customer.time_zone
+                data["currency"] = row.customer.currency_code
+                if row.customer.manager == 1:
+                    data["account_type"] = "Manager"
+                elif row.customer.manager == 0:
+                    data["account_type"] = "Client"
+                # customer_data.append(data)
+                # data["status"] = row.customer.status  # comes in API v10
+                # get billing status too
+                query = """
+                    SELECT
+                        billing_setup.id,
+                        billing_setup.status
+                    FROM billing_setup"""
+
+                response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+                # print("Found the following billing setup results:")
+                for batch in response:
+                    for row in batch.results:
+                        billing_setup = row.billing_setup
+                        # print(
+                        #     f"Billing setup with ID {billing_setup.id}, "
+                        #     f'status "{billing_setup.status.name}", '
+                        # )
+
+                try:
+                    billing_status = billing_setup.status.name
+                except NameError:
+                    billing_status = "no billing"
+
+                # possible statuses are: PENDING, APPROVED, CANCELLED, and APPROVED_HELD
+                # https://developers.google.com/google-ads/api/reference/rpc/v8/BillingSetupStatusEnum.BillingSetupStatus
+                # print('billing_status:')
+                # print(billing_status)
+                data["billing_status"] = billing_status
+
+                # check if client is linked to your Manager account
+                query = """
+                    SELECT
+                        customer_manager_link.manager_customer, 
+                        customer_manager_link.resource_name, 
+                        customer_manager_link.status
+                    FROM customer_manager_link"""
+
+                response = ga_service.search_stream(customer_id=customer_id, query=query)
+                for batch in response:
+                    for row in batch.results:
+                        print("row.customer_manager_link.status:")
+                        print(row.customer_manager_link.status.name)
+                        if row.customer_manager_link.status.name == "ACTIVE":
+                            manager_linked_id = row.customer_manager_link.manager_customer.split('/')[1]
+                            data["manager_account_linked"] = manager_linked_id
+                        else:
+                            data["manager_account_linked"] = "0"
+                
+                customer_data.append(data)
+            
+        print("customer_data:")
+        print(customer_data)
+
+    except GoogleAdsException as ex:
+        print(
+            f'Request with ID "{ex.request_id}" failed with status '
+            f'"{ex.error.code().name}" and includes the following errors:'
+        )
+        for error in ex.failure.errors:
+            print(f'\tError with message "{error.message}".')
+            if error.location:
+                for field_path_element in error.location.field_path_elements:
+                    print(f"\t\tOn field: {field_path_element.field_name}")
+        sys.exit(1)
+
+
+
+
+
+'''
 Add ad schedule to a SC
 Schedule detailing which days of the week and time the business is open
 Status = OK
@@ -452,7 +593,7 @@ Status = OK
 
 '''
 Link existing Google Ads account to your Manager account (MCC)
-Status = INVALID_CUSTOMER_ID error
+Status = OK
 '''
 # from google.ads.googleads.errors import GoogleAdsException
 # from google.api_core import protobuf_helpers
@@ -483,7 +624,7 @@ Status = INVALID_CUSTOMER_ID error
 # "use_proto_plus": True}
 
 # client = GoogleAdsClient.load_from_dict(credentials)
-# print('client initiated...')
+# print('client initiated using Manager credentials...')
 
 # manager_customer_id = GOOGLE_LOGIN_CUSTOMER_ID  # id of manager account
 
@@ -578,21 +719,12 @@ Status = INVALID_CUSTOMER_ID error
 # "client_id": GOOGLE_CLIENT_ID,
 # "client_secret": GOOGLE_CLIENT_SECRET,
 # # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-# "login_customer_id": customer_id,
-# # "linked_customer_id": customer_id,
+# # "login_customer_id": customer_id,
+# "linked_customer_id": customer_id,
 # "use_proto_plus": True}
-# # Configure using dict (the refresh token will be a dynamic value)
-# # credentials = {
-# # "developer_token": GOOGLE_DEVELOPER_TOKEN,
-# # "refresh_token": GOOGLE_REFRESH_TOKEN,
-# # "client_id": GOOGLE_CLIENT_ID,
-# # "client_secret": GOOGLE_CLIENT_SECRET,
-# # # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-# # "linked_customer_id": customer_id,
-# # "use_proto_plus": True}
 
-# # client = GoogleAdsClient.load_from_dict(credentials)
-# print('client initiated...')
+# client = GoogleAdsClient.load_from_dict(credentials)
+# print('client initiated using user credentials...')
 # customer_manager_link_service = client.get_service(
 #     "CustomerManagerLinkService"
 # )
@@ -626,43 +758,23 @@ Status = INVALID_CUSTOMER_ID error
 # '''
 
 # response = customer_manager_link_service.mutate_customer_manager_link(
-#     customer_id=manager_customer_id, operations=[manager_link_operation]
+#     customer_id=customer_id, operations=[manager_link_operation]
 # )
-# '''
-# Getting an error in the above request
-# Request made: 
-# ClientCustomerId: 4642579541, 
-# Host: googleads.googleapis.com, 
-# Method: /google.ads.googleads.v9.services.CustomerManagerLinkService/MutateCustomerManagerLink, 
-# RequestId: cKbBRP3j7wPmG-4wq4t9wA, 
-# IsFault: True, 
-# FaultMessage: Invalid customer ID '6341155848'.
 
-# errors {
-#   error_code {
-#     request_error: INVALID_CUSTOMER_ID
-#   }
-#   message: "Invalid customer ID \'6341155848\'."
-#   location {
-#     field_path_elements {
-#       field_name: "operations"
-#       index: 0
-#     }
-#     field_path_elements {
-#       field_name: "update"
-#     }
-#     field_path_elements {
-#       field_name: "resource_name"
-#     }
-#   }
-# }
-# '''
 # print("response when Client accepts invite link:")
 # print(response)
+# '''
+# results {
+#   resource_name: "customers/6341155848/customerManagerLinks/4642579541~260013338"
+# }
+# '''
 # print(
 #     "Client accepted invitation with resource_name: "
 #     f'"{response.results[0].resource_name}"'
 # )
+# '''
+# Client accepted invitation with resource_name: "customers/6341155848/customerManagerLinks/4642579541~260013338"
+# '''
 # # [END link_manager_to_client]
 
 

@@ -37,7 +37,8 @@ from .serializers import (
     EditAdCreativeSerializer,
     EditKeywordThemesSerializer,
     EditGeoTargetsSerializer,
-    EditAdScheduleSerializer
+    EditAdScheduleSerializer,
+    LinkToManagerSerializer
     )
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -66,6 +67,7 @@ from .edit_sc import (
     )
 from .get_search_terms_report import search_terms_report
 from .get_gmb import business_profile
+from .link_client_to_manager import link_to_manager
 
 
 # Create your views here.
@@ -1376,6 +1378,30 @@ def edit_ad_schedule_campaign(request):
             print(updated_ad_schedule)
 
             response = JsonResponse(updated_ad_schedule, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Link client account to Manager account for existing accounts
+@api_view(['POST'])
+def link_accounts(request):
+    if request.method == 'POST':
+        serializer = LinkToManagerSerializer(data=request.data)
+        if serializer.is_valid():
+            # serializer.save()
+            # get the refresh token
+            refresh_token = serializer['refreshToken'].value
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # call the function to link accounts
+            linked_accounts = link_to_manager(
+                refresh_token,
+                customer_id)
+
+            response = JsonResponse(linked_accounts, safe=False)
            
             return response
         return Response(data="bad request")

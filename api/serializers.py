@@ -24,7 +24,7 @@ from .models import (
     CampaignName, EditCampaignBudget,
     SearchTermsReport, EditAdCreative,
     EditKeywordThemes, EditGeoTargets,
-    EditAdSchedule
+    EditAdSchedule, LinkToManager
     )
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import Token
@@ -233,3 +233,13 @@ class EditAdScheduleSerializer(serializers.ModelSerializer):
             'sun_start', 
             'sun_end', 
             ]
+
+# Serializer for linking client account to Manager account
+class LinkToManagerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LinkToManager
+        fields = [
+            'refreshToken', 
+            'customer_id'
+            ]
+

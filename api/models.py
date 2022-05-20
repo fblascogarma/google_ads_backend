@@ -369,3 +369,13 @@ class EditAdSchedule(models.Model):
             self.sun_start, 
             self.sun_end,
             )
+
+# Model to link client account to your Manager account
+class LinkToManager(models.Model):                   
+    # refreshToken will always be here because we only use this linking method
+    # when onboarding existing Ads accounts.
+    refreshToken = models.CharField(max_length=500)
+    customer_id = models.CharField(max_length=500)
+
+    def __str__(self): 
+        return self.refreshToken, self.customer_id 
