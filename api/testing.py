@@ -17,194 +17,366 @@ import sys
 from uuid import uuid4
 import json
 
-from google.ads.googleads.client import GoogleAdsClient
-# from google.ads.googleads.errors import GoogleAdsException
-from google.api_core import protobuf_helpers
-from pyasn1.type.univ import Null
-
-
-# customer_id = str(4037974191) # billing set up    | account created via api
-# customer_id = str(4597538560) # no billing        | account created via api
-# customer_id = str(2916870939) # billing set up      | account created via ui
-# campaign_id = str(14648734935)    # used it to test remove campaign, and it was successful
-# campaign_id = str(14652327041)
-# new_budget = 3*1000000
-# landing_page = 'https://www.enjoymommyhood.com.ar/'     # for suggestion_info
-# language_code = 'es'                                    # for suggestion_info
-# business_name = 'Enjoy Mommyhood'                       # for suggestion_info
-# country_code = 'AR'                                     # for suggestion_info
-# display_name = [
-#     "ropa para embarazadas",
-#     "corpiños para embarazadas",
-#     "ropa formal para embarazadas",
-#     "ropa de fiesta para embarazadas",
-#     "ropa para embarazadas barata"
-#     ]                                                   # for suggestion_info
-# geo_target_names = [
-#     "buenos aires",
-#     "martinez",
-#     "san isidro",
-#     "olivos"
-#     ]                                                   # for suggestion_info
-
-
-# # # Configurations
-# GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
-# GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
-# GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-# # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
-# GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
-
-# # Configure using dict (the refresh token will be a dynamic value)
-# credentials = {
-# "developer_token": GOOGLE_DEVELOPER_TOKEN,
-# "refresh_token": GOOGLE_REFRESH_TOKEN,
-# "client_id": GOOGLE_CLIENT_ID,
-# "client_secret": GOOGLE_CLIENT_SECRET,
-# # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-# "linked_customer_id": customer_id,
-# "use_proto_plus": True}
-
-# client = GoogleAdsClient.load_from_dict(credentials)
 
 '''
-Check if client account is linked to MCC,
-so if it is not, execute the link.
+Add negative keywords to SC. You can only use free form field,
+not keyword theme constant.
 Status = OK
 '''
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
 
 
-# customer_id = "user_client_id"
+use_login_id = False        # use user's refresh token
 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
 refresh_token = GOOGLE_REFRESH_TOKEN
+customer_id = str(2916870939)
+# campaign_id = str(17074158685)
+campaign_id = str(14857612491)  # campaign with search terms metrics
+new_kt_negative_list = [
+    "testing negative keyword themes 1",
+    "testing negative keyword themes 3"
+]
 
+'''
+Step 1 - Configurations
+'''
 # Configurations
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
 GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
-# GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-credentials = {
+# Configure using dictionary.
+# Check if we need to use login_customer_id in the headers,
+# which is needed if the Ads account was created by the app.
+if use_login_id == True:
+    credentials = {
+    "developer_token": GOOGLE_DEVELOPER_TOKEN,
+    "refresh_token": refresh_token,
+    "client_id": GOOGLE_CLIENT_ID,
+    "client_secret": GOOGLE_CLIENT_SECRET,
+    "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+    # "linked_customer_id": customer_id,
+    "use_proto_plus": True}
+else:
+    credentials = {
     "developer_token": GOOGLE_DEVELOPER_TOKEN,
     "refresh_token": refresh_token,
     "client_id": GOOGLE_CLIENT_ID,
     "client_secret": GOOGLE_CLIENT_SECRET,
     # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
-    # "login_customer_id": customer_id,
-    # "linked_customer_id": customer_id,
+    "linked_customer_id": customer_id,
     "use_proto_plus": True}
 
 client = GoogleAdsClient.load_from_dict(credentials)
+print("client initiated...")
 
-customer_service = client.get_service("CustomerService")
+'''
+Step 1 - Get the current negative keyword themes.
+These will only be in free form (not constant) only.
+'''
 ga_service = client.get_service("GoogleAdsService")
 
-accessible_customers = customer_service.list_accessible_customers()
+query = (f'''
+SELECT 
+    campaign_criterion.type, 
+    campaign_criterion.status, 
+    campaign_criterion.criterion_id, 
+    campaign_criterion.keyword_theme.keyword_theme_constant, 
+    campaign_criterion.keyword_theme.free_form_keyword_theme, 
+    campaign_criterion.negative 
+FROM campaign_criterion 
+WHERE campaign_criterion.type = 'KEYWORD_THEME'
+AND campaign_criterion.negative = 'TRUE'
+AND campaign.id = {campaign_id}
+''')
+response = ga_service.search_stream(customer_id=customer_id, query=query)
 
-resource_names = accessible_customers.resource_names
+keyword_theme_free_form_list = []
+campaign_criterion_id_list = []
+for batch in response:
+    for row in batch.results:
+        if row.campaign_criterion.keyword_theme.free_form_keyword_theme:
+            keyword_theme_free_form_list.append(
+                row.campaign_criterion.keyword_theme.free_form_keyword_theme
+            )
+            campaign_criterion_id_list.append(
+                row.campaign_criterion.criterion_id
+            )
 
-customer_data = []
-for resource_name in resource_names:
-    try:
-        customer_id = resource_name.split('/')[1]
-        query = (f'''
-            SELECT 
-                customer.currency_code, 
-                customer.descriptive_name, 
-                customer.id, 
-                customer.manager, 
-                customer.resource_name, 
-                customer.time_zone
-            FROM customer
-            WHERE customer.resource_name = '{resource_name}'
-            '''
-        )
-        stream = ga_service.search_stream(
-            customer_id=customer_id,
-            query=query
-        )
+print("keyword_theme_free_form_list:")
+print(keyword_theme_free_form_list)
 
-        for batch in stream:
-            for row in batch.results:
-                data = {}
-                data["customer_id"] = row.customer.id
-                data["description"] = row.customer.descriptive_name
-                data["time_zone"] = row.customer.time_zone
-                data["currency"] = row.customer.currency_code
-                if row.customer.manager == 1:
-                    data["account_type"] = "Manager"
-                elif row.customer.manager == 0:
-                    data["account_type"] = "Client"
-                # customer_data.append(data)
-                # data["status"] = row.customer.status  # comes in API v10
-                # get billing status too
-                query = """
-                    SELECT
-                        billing_setup.id,
-                        billing_setup.status
-                    FROM billing_setup"""
+''''
+Step 2 - Create list of negative keywords to remove and to add
+'''
+kw_to_remove = []       # list of keyword constants to remove from campaign
+kw_to_remove_index = [] # this is used to identify the campaign_criterion_id
+kw_to_add = []          # list of keyword constants to add to the campaign
 
-                response = ga_service.search_stream(customer_id=customer_id, query=query)
+print("start creating list of keywords to remove")
+for kw in keyword_theme_free_form_list:
+    print("kw:")
+    print(kw)
+    if kw not in new_kt_negative_list:
+        kw_to_remove.append(kw)
+        # get the index to use it later
+        kw_to_remove_index.append(keyword_theme_free_form_list.index(kw))
 
-                # print("Found the following billing setup results:")
-                for batch in response:
-                    for row in batch.results:
-                        billing_setup = row.billing_setup
-                        # print(
-                        #     f"Billing setup with ID {billing_setup.id}, "
-                        #     f'status "{billing_setup.status.name}", '
-                        # )
+print("start creating list of keywords to add")
+for kw in new_kt_negative_list:
+    print("kw:")
+    print(kw)
+    if kw not in keyword_theme_free_form_list:
+        kw_info = client.get_type("KeywordThemeInfo")
+        kw_info.free_form_keyword_theme = kw
+        kw_to_add.append(kw_info)
 
-                try:
-                    billing_status = billing_setup.status.name
-                except NameError:
-                    billing_status = "no billing"
+print("kw_to_remove:")
+print(kw_to_remove)
+print("kw_to_add:")
+print(kw_to_add)
 
-                # possible statuses are: PENDING, APPROVED, CANCELLED, and APPROVED_HELD
-                # https://developers.google.com/google-ads/api/reference/rpc/v8/BillingSetupStatusEnum.BillingSetupStatus
-                # print('billing_status:')
-                # print(billing_status)
-                data["billing_status"] = billing_status
+'''
+Step 3 - Create remove and create operations
+'''
+# we are going to append all mutate operations under operations
+operations = []
 
-                # check if client is linked to your Manager account
-                query = """
-                    SELECT
-                        customer_manager_link.manager_customer, 
-                        customer_manager_link.resource_name, 
-                        customer_manager_link.status
-                    FROM customer_manager_link"""
+# get the campaign_criterion_id of those that we need to remove
+campaign_criterion_id_to_remove = []
+for i in kw_to_remove_index:
+    campaign_criterion_id_to_remove.append(campaign_criterion_id_list[i])
 
-                response = ga_service.search_stream(customer_id=customer_id, query=query)
-                for batch in response:
-                    for row in batch.results:
-                        print("row.customer_manager_link.status:")
-                        print(row.customer_manager_link.status.name)
-                        if row.customer_manager_link.status.name == "ACTIVE":
-                            manager_linked_id = row.customer_manager_link.manager_customer.split('/')[1]
-                            data["manager_account_linked"] = manager_linked_id
-                        else:
-                            data["manager_account_linked"] = "0"
+# create operation to remove them
+campaign_criterion_service = client.get_service("CampaignCriterionService")
+for i in campaign_criterion_id_to_remove:
+    # get the resource name
+    # that will be in this form: customers/{customer_id}/campaignCriteria/{campaign_id}~{criterion_id}
+    campaign_criterion_resource_name = campaign_criterion_service.campaign_criterion_path(
+    customer_id, campaign_id, i
+    )
+    # start mutate operation to remove
+    mutate_operation = client.get_type("MutateOperation")
+    campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+    campaign_criterion_operation.remove = campaign_criterion_resource_name
+    operations.append(campaign_criterion_operation)
+
+# create operation to add keywords
+for kw in kw_to_add:
+    mutate_operation = client.get_type("MutateOperation")
+    campaign_criterion_operation = mutate_operation.campaign_criterion_operation
+
+    campaign_criterion = campaign_criterion_operation.create
+
+    # Set the campaign
+    campaign_service = client.get_service("CampaignService")
+    campaign_criterion.campaign = campaign_service.campaign_path(
+        customer_id, campaign_id
+    )
+    # Set the criterion type to KEYWORD_THEME.
+    campaign_criterion.type_ = client.enums.CriterionTypeEnum.KEYWORD_THEME
+    # Set the criterion to negative.
+    campaign_criterion.negative = True
+    # Set the keyword theme to the given KeywordThemeInfo.
+    campaign_criterion.keyword_theme = kw
+    operations.append(campaign_criterion_operation)
+
+print("operations to send as a mutate request:")
+print(operations)
+
+'''
+Step 4 - Send all mutate requests
+'''
+response = campaign_criterion_service.mutate_campaign_criteria(
+    customer_id=customer_id,
+    operations=[ 
+        # Expand the list of campaign criterion operations into the list of
+        # other mutate operations
+        *operations,
+    ],
+)
+print("response:")
+print(response)
+
+'''
+Step 5 - Query keyword themes to send to frontend
+'''
+query = (f'''
+SELECT 
+    campaign_criterion.type, 
+    campaign_criterion.status, 
+    campaign_criterion.criterion_id, 
+    campaign_criterion.keyword_theme.keyword_theme_constant, 
+    campaign_criterion.keyword_theme.free_form_keyword_theme, 
+    campaign_criterion.negative 
+FROM campaign_criterion 
+WHERE campaign_criterion.type = 'KEYWORD_THEME'
+AND campaign_criterion.negative = 'TRUE'
+AND campaign.id = {campaign_id}
+''')
+response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+new_keyword_theme_free_form_list = []
+campaign_criterion_id_list = []
+for batch in response:
+    for row in batch.results:
+        if row.campaign_criterion.keyword_theme.free_form_keyword_theme:
+            new_keyword_theme_free_form_list.append(
+                row.campaign_criterion.keyword_theme.free_form_keyword_theme
+            )
+            campaign_criterion_id_list.append(
+                row.campaign_criterion.criterion_id
+            )
+
+print("new_keyword_theme_free_form_list:")
+print(new_keyword_theme_free_form_list)
+
+# eliminate duplicates and add unique values only
+updated_kw = list(dict.fromkeys(new_keyword_theme_free_form_list))
+
+json.dumps(updated_kw)
+print("updated_kw:")
+print(updated_kw)
+
+
+'''
+Check if client account is linked to MCC,
+so if it is not, execute the link.
+Status = OK
+'''
+# from google.ads.googleads.client import GoogleAdsClient
+# from google.ads.googleads.errors import GoogleAdsException
+
+
+# # customer_id = "user_client_id"
+# GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+# refresh_token = GOOGLE_REFRESH_TOKEN
+
+# # Configurations
+# GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+# GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+# GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
+# # GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
+
+# credentials = {
+#     "developer_token": GOOGLE_DEVELOPER_TOKEN,
+#     "refresh_token": refresh_token,
+#     "client_id": GOOGLE_CLIENT_ID,
+#     "client_secret": GOOGLE_CLIENT_SECRET,
+#     # "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+#     # "login_customer_id": customer_id,
+#     # "linked_customer_id": customer_id,
+#     "use_proto_plus": True}
+
+# client = GoogleAdsClient.load_from_dict(credentials)
+
+# customer_service = client.get_service("CustomerService")
+# ga_service = client.get_service("GoogleAdsService")
+
+# accessible_customers = customer_service.list_accessible_customers()
+
+# resource_names = accessible_customers.resource_names
+
+# customer_data = []
+# for resource_name in resource_names:
+#     try:
+#         customer_id = resource_name.split('/')[1]
+#         query = (f'''
+#             SELECT 
+#                 customer.currency_code, 
+#                 customer.descriptive_name, 
+#                 customer.id, 
+#                 customer.manager, 
+#                 customer.resource_name, 
+#                 customer.time_zone
+#             FROM customer
+#             WHERE customer.resource_name = '{resource_name}'
+#             '''
+#         )
+#         stream = ga_service.search_stream(
+#             customer_id=customer_id,
+#             query=query
+#         )
+
+#         for batch in stream:
+#             for row in batch.results:
+#                 data = {}
+#                 data["customer_id"] = row.customer.id
+#                 data["description"] = row.customer.descriptive_name
+#                 data["time_zone"] = row.customer.time_zone
+#                 data["currency"] = row.customer.currency_code
+#                 if row.customer.manager == 1:
+#                     data["account_type"] = "Manager"
+#                 elif row.customer.manager == 0:
+#                     data["account_type"] = "Client"
+#                 # customer_data.append(data)
+#                 # data["status"] = row.customer.status  # comes in API v10
+#                 # get billing status too
+#                 query = """
+#                     SELECT
+#                         billing_setup.id,
+#                         billing_setup.status
+#                     FROM billing_setup"""
+
+#                 response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+#                 # print("Found the following billing setup results:")
+#                 for batch in response:
+#                     for row in batch.results:
+#                         billing_setup = row.billing_setup
+#                         # print(
+#                         #     f"Billing setup with ID {billing_setup.id}, "
+#                         #     f'status "{billing_setup.status.name}", '
+#                         # )
+
+#                 try:
+#                     billing_status = billing_setup.status.name
+#                 except NameError:
+#                     billing_status = "no billing"
+
+#                 # possible statuses are: PENDING, APPROVED, CANCELLED, and APPROVED_HELD
+#                 # https://developers.google.com/google-ads/api/reference/rpc/v8/BillingSetupStatusEnum.BillingSetupStatus
+#                 # print('billing_status:')
+#                 # print(billing_status)
+#                 data["billing_status"] = billing_status
+
+#                 # check if client is linked to your Manager account
+#                 query = """
+#                     SELECT
+#                         customer_manager_link.manager_customer, 
+#                         customer_manager_link.resource_name, 
+#                         customer_manager_link.status
+#                     FROM customer_manager_link"""
+
+#                 response = ga_service.search_stream(customer_id=customer_id, query=query)
+#                 for batch in response:
+#                     for row in batch.results:
+#                         print("row.customer_manager_link.status:")
+#                         print(row.customer_manager_link.status.name)
+#                         if row.customer_manager_link.status.name == "ACTIVE":
+#                             manager_linked_id = row.customer_manager_link.manager_customer.split('/')[1]
+#                             data["manager_account_linked"] = manager_linked_id
+#                         else:
+#                             data["manager_account_linked"] = "0"
                 
-                customer_data.append(data)
+#                 customer_data.append(data)
             
-        print("customer_data:")
-        print(customer_data)
+#         print("customer_data:")
+#         print(customer_data)
 
-    except GoogleAdsException as ex:
-        print(
-            f'Request with ID "{ex.request_id}" failed with status '
-            f'"{ex.error.code().name}" and includes the following errors:'
-        )
-        for error in ex.failure.errors:
-            print(f'\tError with message "{error.message}".')
-            if error.location:
-                for field_path_element in error.location.field_path_elements:
-                    print(f"\t\tOn field: {field_path_element.field_name}")
-        sys.exit(1)
-
-
+#     except GoogleAdsException as ex:
+#         print(
+#             f'Request with ID "{ex.request_id}" failed with status '
+#             f'"{ex.error.code().name}" and includes the following errors:'
+#         )
+#         for error in ex.failure.errors:
+#             print(f'\tError with message "{error.message}".')
+#             if error.location:
+#                 for field_path_element in error.location.field_path_elements:
+#                     print(f"\t\tOn field: {field_path_element.field_name}")
+#         sys.exit(1)
 
 
 

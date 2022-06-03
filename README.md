@@ -187,6 +187,9 @@ This section doesn't cover load balancers, queue systems, nor scaling architectu
 
 ## Backend
 
+In the Authentication & Authorization components, we set it up in a way that helps during development, but
+you have to change when pushing to production. Check [that section](https://docs.google.com/document/d/10WyzDUNZTVHhenWgCopf3YyaRDsyoavc7aHuOAMJF6Y/edit#bookmark=kix.mbb12b5fpd16) of the guide.
+
 There are three things to consider when thinking of deploying the backend to production.
 
 1. The first thing you should do is turn off the debug mode. You don't want it running when your app is in production. Go to the [settings.py](https://github.com/fblascogarma/google_ads_backend/blob/main/backend/settings.py#L40) file, and change the 

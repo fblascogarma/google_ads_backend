@@ -68,6 +68,10 @@ from .edit_sc import (
 from .get_search_terms_report import search_terms_report
 from .get_gmb import business_profile
 from .link_client_to_manager import link_to_manager
+from .negative_keywords import (
+    get_negative_keywords,
+    edit_negative_keywords
+    )
 
 
 # Create your views here.
@@ -1402,6 +1406,98 @@ def link_accounts(request):
                 customer_id)
 
             response = JsonResponse(linked_accounts, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Get negative keyword themes for smart campaign
+@api_view(['POST'])
+def get_negative_keyword_themes(request):
+    if request.method == 'POST':
+        serializer = CampaignSettingsSerializer(data=request.data)
+        if serializer.is_valid():
+            '''
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+                use_login_id = True
+            else: 
+                refresh_token = serializer['refreshToken'].value
+                use_login_id = False
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            # call the function to get the negative keyword themes
+            negative_keyword_themes = get_negative_keywords(
+                refresh_token, 
+                customer_id, 
+                campaign_id, 
+                use_login_id)
+            print(negative_keyword_themes)
+
+            response = JsonResponse(negative_keyword_themes, safe=False)
+           
+            return response
+        return Response(data="bad request")
+
+# Edit negative keyword themes for smart campaign
+@api_view(['POST'])
+def edit_negative_keyword_themes(request):
+    if request.method == 'POST':
+        serializer = EditKeywordThemesSerializer(data=request.data)
+        if serializer.is_valid():
+            '''
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
+            '''
+            if serializer['refreshToken'].value == '':
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+                use_login_id = True
+            else: 
+                refresh_token = serializer['refreshToken'].value
+                use_login_id = False
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+
+            # get the campaign_id
+            campaign_id = serializer['campaign_id'].value
+            campaign_id = str(campaign_id)
+
+            # get the negative keywords list
+            new_kt_negative_list = serializer['display_name'].value
+            # transform string into a list
+            new_kt_negative_list = new_kt_negative_list.replace('"','').replace('[','').replace(']','').split(",")
+
+            # call the function to edit the negative keyword themes
+            updated_negative_keyword_themes = edit_negative_keywords(
+                refresh_token, 
+                customer_id, 
+                campaign_id, 
+                new_kt_negative_list,
+                use_login_id)
+            print(updated_negative_keyword_themes)
+
+            response = JsonResponse(updated_negative_keyword_themes, safe=False)
            
             return response
         return Response(data="bad request")

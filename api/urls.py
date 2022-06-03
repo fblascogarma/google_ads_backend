@@ -39,7 +39,9 @@ from .views import (
     get_business_info,
     edit_geo_target,
     edit_ad_schedule_campaign,
-    link_accounts
+    link_accounts,
+    get_negative_keyword_themes,
+    edit_negative_keyword_themes
     )
 from rest_framework.routers import DefaultRouter
 
@@ -76,4 +78,6 @@ urlpatterns = [
     path('api/sc-settings/edit-geo-targets/', edit_geo_target),
     path('api/sc-settings/edit-ad-schedule/', edit_ad_schedule_campaign),
     path('api/link-accounts/', link_accounts),
+    path('api/get-negative-keywords/', get_negative_keyword_themes),
+    path('api/edit-negative-keywords/', edit_negative_keyword_themes),
 ]
