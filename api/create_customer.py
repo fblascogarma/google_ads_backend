@@ -20,7 +20,8 @@ from google.ads.googleads.errors import GoogleAdsException
 
 
 def create_client_customer (
-    refresh_token, 
+    refresh_token,
+    customer_id, 
     account_name, 
     currency, 
     time_zone, 
@@ -34,13 +35,16 @@ def create_client_customer (
         GOOGLE_DEVELOPER_TOKEN = os.environ.get("GOOGLE_DEVELOPER_TOKEN", None)
         GOOGLE_LOGIN_CUSTOMER_ID = os.environ.get("GOOGLE_LOGIN_CUSTOMER_ID", None)
 
-        # Configure using dict (the refresh token will be a dynamic value)
+        # Configure using dictionary.
+        # To create a Google Ads Client account,
+        # we are going to use our Manager account.
         credentials = {
         "developer_token": GOOGLE_DEVELOPER_TOKEN,
         "refresh_token": refresh_token,
         "client_id": GOOGLE_CLIENT_ID,
         "client_secret": GOOGLE_CLIENT_SECRET,
         "login_customer_id": GOOGLE_LOGIN_CUSTOMER_ID,
+        # "linked_customer_id": customer_id,
         "use_proto_plus": True}
       
         client = GoogleAdsClient.load_from_dict(credentials)

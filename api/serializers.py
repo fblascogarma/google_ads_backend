@@ -84,13 +84,14 @@ class CustomerIDSerializer(serializers.ModelSerializer):
 class ReportingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reporting
-        fields = ['refreshToken', 'customer_id', 'date_range']
+        fields = ['mytoken', 'refreshToken', 'customer_id', 'date_range']
 
 # Serializer for getting keyword themes recommendations
 class GetKeywordThemesRecommendationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GetKeywordThemesRecommendations
         fields = [
+            'mytoken',
             'refreshToken', 
             'keyword_text', 
             'country_code', 
@@ -112,13 +113,26 @@ class KeywordThemesRecommendationsSerializer(serializers.ModelSerializer):
 class LocationRecommendationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = LocationRecommendations
-        fields = ['refreshToken', 'location', 'country_code', 'language_code']
+        fields = [
+            'mytoken', 
+            'refreshToken', 
+            'customer_id',
+            'location', 
+            'country_code', 
+            'language_code']
 
 # Serializer for Google Ads account creation
 class GoogleAdsAccountCreationSerializer(serializers.ModelSerializer):
     class Meta:
         model = GoogleAdsAccountCreation
-        fields = ['refreshToken', 'mytoken', 'account_name', 'currency', 'time_zone', 'email_address']
+        fields = [
+            'refreshToken', 
+            'mytoken', 
+            'customer_id',
+            'account_name', 
+            'currency', 
+            'time_zone', 
+            'email_address']
 
 # Serializer for the customer id of the Google Ads account created
 class NewAccountCustomerIDSerializer(serializers.ModelSerializer):
@@ -131,6 +145,7 @@ class GetBudgetRecommendationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GetBudgetRecommendations
         fields = [
+            'mytoken',
             'refreshToken', 
             'customer_id', 
             'display_name', 
@@ -147,7 +162,8 @@ class CreateSmartCampaignSerializer(serializers.ModelSerializer):
     class Meta:
         model = CreateSmartCampaign
         fields = [
-            'refreshToken', 'customer_id', 'display_name', 'language_code', 'country_code', 'landing_page', 'geo_target_names', 
+            'mytoken', 'refreshToken', 'customer_id', 'display_name', 
+            'language_code', 'country_code', 'landing_page', 'geo_target_names', 
             'selected_budget', 'phone_number', 'business_name', 'business_location_id', 
             'headline_1_user', 'headline_2_user', 'headline_3_user',
             'desc_1_user', 'desc_2_user', 'campaign_name']
@@ -156,31 +172,40 @@ class CreateSmartCampaignSerializer(serializers.ModelSerializer):
 class CampaignSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = CampaignSettings
-        fields = ['refreshToken', 'customer_id', 'campaign_id']
+        fields = [
+            'mytoken', 'refreshToken', 'customer_id', 'campaign_id']
 
 # Serializer for changing campaign name
 class CampaignNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = CampaignName
-        fields = ['refreshToken', 'customer_id', 'campaign_id', 'campaign_name']
+        fields = [
+            'mytoken', 'refreshToken', 'customer_id', 'campaign_id', 
+            'campaign_name']
 
 # Serializer for changing campaign budget
 class EditCampaignBudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = EditCampaignBudget
-        fields = ['refreshToken', 'customer_id', 'campaign_id', 'new_budget', 'budget_id']
+        fields = [
+            'mytoken', 'refreshToken', 'customer_id', 'campaign_id', 
+            'new_budget', 'budget_id']
 
 # Serializer for search terms reporting
 class SearchTermsReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = SearchTermsReport
-        fields = ['refreshToken', 'customer_id', 'campaign_id', 'date_range']
+        fields = [
+            'mytoken', 'refreshToken', 'customer_id', 
+            'campaign_id', 'date_range'
+            ]
 
 # Serializer for changing campaign ad creative (headlines and descriptions)
 class EditAdCreativeSerializer(serializers.ModelSerializer):
     class Meta:
         model = EditAdCreative
         fields = [
+            'mytoken',
             'refreshToken', 
             'customer_id', 
             'campaign_id', 
@@ -195,13 +220,19 @@ class EditAdCreativeSerializer(serializers.ModelSerializer):
 class EditKeywordThemesSerializer(serializers.ModelSerializer):
     class Meta:
         model = EditKeywordThemes
-        fields = ['refreshToken', 'customer_id', 'campaign_id', 'display_name']
+        fields = [
+            'mytoken',
+            'refreshToken', 
+            'customer_id', 
+            'campaign_id', 
+            'display_name']
 
 # Serializer for editing geo targets
 class EditGeoTargetsSerializer(serializers.ModelSerializer):
     class Meta:
         model = EditGeoTargets
         fields = [
+            'mytoken',
             'refreshToken', 
             'customer_id', 
             'campaign_id', 
@@ -215,6 +246,7 @@ class EditAdScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = EditAdSchedule
         fields = [
+            'mytoken',
             'refreshToken', 
             'customer_id', 
             'campaign_id', 
@@ -239,6 +271,7 @@ class LinkToManagerSerializer(serializers.ModelSerializer):
     class Meta:
         model = LinkToManager
         fields = [
+            'mytoken',
             'refreshToken', 
             'customer_id'
             ]

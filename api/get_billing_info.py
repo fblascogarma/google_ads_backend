@@ -33,6 +33,7 @@ def billing_info(
         # Check if we need to use login_customer_id in the headers,
         # which is needed if the Ads account was created by the app.
         if use_login_id == True:
+            print('use the app refresh token and login customer id')
             credentials = {
             "developer_token": GOOGLE_DEVELOPER_TOKEN,
             "refresh_token": refresh_token,
@@ -42,6 +43,7 @@ def billing_info(
             # "linked_customer_id": customer_id,
             "use_proto_plus": True}
         else:
+            print('use the user refresh token and linked customer id')
             credentials = {
             "developer_token": GOOGLE_DEVELOPER_TOKEN,
             "refresh_token": refresh_token,

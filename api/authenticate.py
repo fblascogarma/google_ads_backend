@@ -18,9 +18,6 @@ import os
 from google_auth_oauthlib.flow import Flow
 
 
-_SCOPE = "https://www.googleapis.com/auth/adwords"
-# _PORT = 8080
-# _REDIRECT_URI = f"http://localhost:{_PORT}"
 _REDIRECT_URI = f"http://localhost:3000/"
 
 

@@ -41,7 +41,7 @@ class AntiForgeryToken(models.Model):
     def __str__(self): 
         return self.mytoken, self.google_access_code, self.passthrough_val
 
-# Model for the refresh token
+# Model to store the refresh token
 class RefreshToken(models.Model):                   
     mytoken = models.CharField(max_length=500)
     refreshToken = models.CharField(max_length=500, blank=True)
@@ -65,17 +65,18 @@ class CustomerID(models.Model):
         return self.refreshToken, self.customer_id
 
 # Model to store frontend data to get info of campaigns
-class Reporting(models.Model):                   
-    # we make the refreshToken optional in case user created account via Fran Ads
+class Reporting(models.Model): 
+    mytoken = models.CharField(max_length=500)                  
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     date_range = models.CharField(max_length=500)
 
     def __str__(self): 
-        return self.refreshToken, self.customer_id, self.date_range
+        return self.mytoken, self.refreshToken, self.customer_id, self.date_range
 
 # Model to get keyword themes recommendations
-class GetKeywordThemesRecommendations(models.Model):                   
+class GetKeywordThemesRecommendations(models.Model):      
+    mytoken = models.CharField(max_length=500)                  
     refreshToken = models.CharField(max_length=500, blank=True)
     keyword_text = models.CharField(max_length=500, blank=True)
     country_code = models.CharField(max_length=500)
@@ -87,9 +88,9 @@ class GetKeywordThemesRecommendations(models.Model):
     geo_target_names = models.TextField(blank=True)
 
 
-
     def __str__(self): 
         return (
+            self.mytoken,
             self.refreshToken, 
             self.keyword_text, 
             self.country_code, 
@@ -111,25 +112,27 @@ class KeywordThemesRecommendations(models.Model):
 
 # Model to get geo location recommendations
 class LocationRecommendations(models.Model):                   
+    mytoken = models.CharField(max_length=500)
     refreshToken = models.CharField(max_length=500, blank=True)
+    customer_id = models.CharField(max_length=500)
     language_code = models.CharField(max_length=500)
     country_code = models.CharField(max_length=500)
     location = models.CharField(max_length=500)
 
     def __str__(self): 
         return (
+            self.mytoken, 
             self.refreshToken, 
+            self.customer_id,
             self.location, 
             self.country_code, 
             self.language_code
             )
 
 # Model to create Google Ads account
-class GoogleAdsAccountCreation(models.Model):  
-    '''make the refresh token optional so if there is no value
-    it means we are going to use the app's refresh token because
-    user hasn't authenticated with an existing Google Ads account'''                 
+class GoogleAdsAccountCreation(models.Model):                
     refreshToken = models.CharField(max_length=500, blank=True)
+    customer_id = models.CharField(max_length=500, blank=True)
     mytoken = models.CharField(max_length=500, blank=True)
     account_name = models.CharField(max_length=500)
     currency = models.CharField(max_length=10)
@@ -139,6 +142,7 @@ class GoogleAdsAccountCreation(models.Model):
     def __str__(self): 
         return (
             self.refreshToken, 
+            self.customer_id, 
             self.mytoken, 
             self.time_zone, 
             self.currency, 
@@ -158,7 +162,8 @@ class NewAccountCustomerID(models.Model):
 # Model to get budget recommendations
 # and ad creative recommendations (headlines and descriptions)
 # because input is the same so simplifying models
-class GetBudgetRecommendations(models.Model):                   
+class GetBudgetRecommendations(models.Model):   
+    mytoken = models.CharField(max_length=500)                  
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     display_name = models.TextField()
@@ -172,6 +177,7 @@ class GetBudgetRecommendations(models.Model):
 
     def __str__(self): 
         return (
+            self.mytoken,
             self.refreshToken, 
             self.customer_id, 
             self.display_name, 
@@ -184,7 +190,8 @@ class GetBudgetRecommendations(models.Model):
             )
 
 # Model to create smart campaign
-class CreateSmartCampaign(models.Model):                   
+class CreateSmartCampaign(models.Model): 
+    mytoken = models.CharField(max_length=500)                  
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     display_name = models.TextField()
@@ -207,7 +214,7 @@ class CreateSmartCampaign(models.Model):
 
     def __str__(self): 
         return (
-            self.refreshToken, self.customer_id, self.display_name, 
+            self.mytoken, self.refreshToken, self.customer_id, self.display_name, 
             self.language_code, self.country_code, self.landing_page, 
             self.geo_target_names, self.selected_budget, self.phone_number,
             self.business_name, self.business_location_id, 
@@ -218,28 +225,37 @@ class CreateSmartCampaign(models.Model):
 
 # Model to store frontend data to get campaign settings
 class CampaignSettings(models.Model):                   
-    # we make the refreshToken optional in case user created account via Fran Ads
+    mytoken = models.CharField(max_length=500)                  
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     campaign_id = models.CharField(max_length=500)
 
     def __str__(self): 
-        return self.refreshToken, self.customer_id, self.campaign_id
+        return (
+            self.mytoken, 
+            self.refreshToken, 
+            self.customer_id, 
+            self.campaign_id)
 
 # Model to store frontend data to change campaign name
 class CampaignName(models.Model):                   
-    # we make the refreshToken optional in case user created account via Fran Ads
+    mytoken = models.CharField(max_length=500)
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     campaign_id = models.CharField(max_length=500)
     campaign_name = models.CharField(max_length=500)
 
     def __str__(self): 
-        return self.refreshToken, self.customer_id, self.campaign_id, self.campaign_name
+        return (
+            self.mytoken, 
+            self.refreshToken, 
+            self.customer_id, 
+            self.campaign_id, 
+            self.campaign_name)
 
 # Model to edit campaign budget
 class EditCampaignBudget(models.Model):                   
-    # we make the refreshToken optional in case user created account via Fran Ads
+    mytoken = models.CharField(max_length=500)
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     campaign_id = models.CharField(max_length=500)
@@ -248,6 +264,7 @@ class EditCampaignBudget(models.Model):
 
     def __str__(self): 
         return (
+            self.mytoken,
             self.refreshToken, 
             self.customer_id, 
             self.campaign_id, 
@@ -257,18 +274,24 @@ class EditCampaignBudget(models.Model):
 
 # Model to get search terms report
 class SearchTermsReport(models.Model):                   
-    # we make the refreshToken optional in case user created account via Fran Ads
+    mytoken = models.CharField(max_length=500)                  
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     campaign_id = models.CharField(max_length=500)
     date_range = models.CharField(max_length=500)
 
     def __str__(self): 
-        return self.refreshToken, self.customer_id, self.campaign_id, self.date_range
+        return (
+            self.mytoken, 
+            self.refreshToken, 
+            self.customer_id, 
+            self.campaign_id, 
+            self.date_range)
 
 # Model to edit ad creative of Smart Campaign
 # (headlines and descriptions)
-class EditAdCreative(models.Model):                   
+class EditAdCreative(models.Model): 
+    mytoken = models.CharField(max_length=500)
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     campaign_id = models.CharField(max_length=500)
@@ -281,6 +304,7 @@ class EditAdCreative(models.Model):
 
     def __str__(self): 
         return (
+            self.mytoken,
             self.refreshToken, 
             self.customer_id, 
             self.new_headline_1, 
@@ -291,7 +315,8 @@ class EditAdCreative(models.Model):
             )
 
 # Model to edit keyword themes
-class EditKeywordThemes(models.Model):                   
+class EditKeywordThemes(models.Model):  
+    mytoken = models.CharField(max_length=500)
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     campaign_id = models.CharField(max_length=500)
@@ -299,6 +324,7 @@ class EditKeywordThemes(models.Model):
 
     def __str__(self): 
         return (
+            self.mytoken,
             self.refreshToken, 
             self.customer_id, 
             self.campaign_id, 
@@ -307,7 +333,7 @@ class EditKeywordThemes(models.Model):
 
 # Model to edit campaign geo target
 class EditGeoTargets(models.Model):                   
-    # we make the refreshToken optional in case user created account via Fran Ads
+    mytoken = models.CharField(max_length=500)
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     campaign_id = models.CharField(max_length=500)
@@ -317,6 +343,7 @@ class EditGeoTargets(models.Model):
 
     def __str__(self): 
         return (
+            self.mytoken,
             self.refreshToken, 
             self.customer_id, 
             self.campaign_id, 
@@ -327,7 +354,7 @@ class EditGeoTargets(models.Model):
 
 # Model to edit campaign ad schedule
 class EditAdSchedule(models.Model):                   
-    # we make the refreshToken optional in case user created account via Fran Ads
+    mytoken = models.CharField(max_length=500)
     refreshToken = models.CharField(max_length=500, blank=True)
     customer_id = models.CharField(max_length=500)
     campaign_id = models.CharField(max_length=500)
@@ -351,6 +378,7 @@ class EditAdSchedule(models.Model):
 
     def __str__(self): 
         return (
+            self.mytoken,
             self.refreshToken, 
             self.customer_id, 
             self.campaign_id, 
@@ -371,11 +399,12 @@ class EditAdSchedule(models.Model):
             )
 
 # Model to link client account to your Manager account
-class LinkToManager(models.Model):                   
+class LinkToManager(models.Model):  
+    mytoken = models.CharField(max_length=500)                  
     # refreshToken will always be here because we only use this linking method
     # when onboarding existing Ads accounts.
     refreshToken = models.CharField(max_length=500)
     customer_id = models.CharField(max_length=500)
 
     def __str__(self): 
-        return self.refreshToken, self.customer_id 
+        return self.mytoken, self.refreshToken, self.customer_id 

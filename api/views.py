@@ -50,6 +50,7 @@ from rest_framework import serializers, status
 import os
 
 from .authenticate import connect, get_token
+from .get_user_credentials import get_refresh_token
 from .list_accessible_accounts import list_accounts
 from .get_campaigns import campaign_info
 from .keyword_themes import get_keyword_themes_suggestions
@@ -98,7 +99,8 @@ class RefreshTokenViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = (TokenAuthentication, )
 
-# Get the authorization URL so user can give consent
+# Get the authorization URL so user can give consent.
+# API endpoint 'api/connect/'
 @api_view(['GET'])
 def authenticate(request):
     if request.method == 'GET':
@@ -117,7 +119,8 @@ def authenticate(request):
         # and user will authenticate themselves and authorize your app permissions
         return response
 
-# Callback to get the refresh token and save it to our backend
+# Callback to get the refresh token and save it to our backend.
+# API endpoint 'api/get-token/'
 @api_view(['POST'])
 def callback(request):
     if request.method == 'POST':
@@ -133,33 +136,45 @@ def callback(request):
 
             # call the function get_token from the authenticate.py file
             refresh_token = get_token(google_access_code)
+            print("refresh_token after using the access token:")
+            print(refresh_token)
+            print("refresh_token data type:")
+            print(type(refresh_token))
 
-            # need to save the refresh token in my AdWordsCredentials model
-            serializer_credentials = AdWordsCredentialsSerializer(data={
+            # need to save the refresh token in my RefreshToken model
+            serializer_credentials = RefreshTokenSerializer(data={
                 'mytoken': mytoken, 
-                'google_access_code': google_access_code, 
-                'refresh_token': refresh_token
+                'refreshToken': refresh_token
                 })
+        
             if serializer_credentials.is_valid():
+                print('serializer valid so saving refresh token to RefreshToken model')
                 serializer_credentials.save()
+            if not serializer_credentials.is_valid():
+                print('serializer is not valid and refresh token was not saved')
 
             # send the refresh token as the response
             response = HttpResponse(refresh_token)
             return response
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Get list of accounts associated with the Google account the user used to authenticate
+# Get list of accounts associated with the Google account the user used to authenticate.
+# This view is only available to users who linked existing account.
+# API endpoint 'api/get-accounts/'
 @api_view(['POST'])
 def list_ads_accounts(request):
     if request.method == 'POST':
-        serializer = RefreshTokenSerializer(data=request.data)
+        serializer = MyTokenSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('serializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
             # get the refresh token
-            refresh_token = serializer['refreshToken'].value
+            refresh_token = get_refresh_token(mytoken)
 
             # call the function to get the list of accounts
-            list_of_accounts = list_accounts(refresh_token)
+            if refresh_token is not None:
+                list_of_accounts = list_accounts(refresh_token)
 
             # response = HttpResponse(list_of_accounts)
             response = JsonResponse(list_of_accounts, safe=False)
@@ -167,13 +182,15 @@ def list_ads_accounts(request):
             return response
         return Response(data="bad request")
 
-# Lookup for the refresh token when user signs in
+
+# Lookup for the refresh token when user signs in.
+# API endpoint 'api/lookup-refreshtoken/'
 @api_view(['POST'])
 def search_token(request):
     if request.method == 'POST':
         serializer = MyTokenSerializer(data=request.data)
         if serializer.is_valid():
-            print('serializer is valid')
+            print('MyTokenSerializer is valid')
             # get the token associated with that user
             mytoken = serializer['mytoken'].value
 
@@ -183,10 +200,15 @@ def search_token(request):
             try:
                 print('trying to get refresh token...')
                 refresh_token = RefreshToken.objects.get(mytoken=mytoken)
+                print('got this refresh_token:')
+                print(refresh_token)
+                user_data = {
+                    'refresh_token': 1,
+                    'customer_id': 0
+                }
 
-                # send the refresh token to the frontend
-                response = HttpResponse(refresh_token)
-                return response
+                # send to the frontend that user has a refresh token
+                return JsonResponse(user_data, safe=False)
 
             # if there are more than one mytoken with that value in the database
             # you will get the MultipleObjectsReturned error
@@ -202,10 +224,13 @@ def search_token(request):
                 refresh_token = query_set['refreshToken']
                 print("refresh_token:")
                 print(refresh_token)
-            
-                # send the refresh token to the frontend
-                response = HttpResponse(refresh_token)
-                return response
+                user_data = {
+                    'refresh_token': 1,
+                    'customer_id': 0
+                }
+
+                # send to the frontend that user has a refresh token
+                return JsonResponse(user_data, safe=False)
             
             # if user has no refresh token,
             # check if user has a customer_id from Google Ads
@@ -214,11 +239,24 @@ def search_token(request):
                 print('user has no refresh token')
                 try:
                     print('trying to get customer id if exists...')
-                    customer_id = NewAccountCustomerID.objects.get(mytoken=mytoken)
+                    customer_id = NewAccountCustomerID.objects.get(mytoken=mytoken).customer_id
+                    print("customer_id:")
+                    print(customer_id)
+                    print('customer_id data type:')
+                    print(type(customer_id))
 
-                    response2 = HttpResponse(customer_id)
-                    return response2
+                    # send to the frontend that user has a Google Ads account
+                    user_data = {
+                        'refresh_token': 0,
+                        'customer_id': customer_id
+                    }
 
+                    return JsonResponse(user_data, safe=False)
+
+                # Fran Ads is designed so users that don't have a Google Ads account
+                # can create one in the app, but just one. Therefore, the error
+                # below will never happen as each user will only have one Ads account.
+                # However, we left it just in case you want to change that logic.
                 except NewAccountCustomerID.MultipleObjectsReturned:
                     print('more than one customer id found so getting most recen one')
                     query_set2 = NewAccountCustomerID.objects.filter(mytoken=mytoken)
@@ -226,24 +264,37 @@ def search_token(request):
                     query_set2 = query_set2.values()[most_recent2]
 
                     customer_id = query_set2['customer_id']
+                    # send to the frontend that user has a Google Ads account
+                    user_data = {
+                        'refresh_token': 0,
+                        'customer_id': customer_id
+                    }
 
-                    response2 = HttpResponse(customer_id)
-                    return response2
+                    return JsonResponse(user_data, safe=False)
 
                 # new app user that doesn't have refresh token, nor customer id
                 except NewAccountCustomerID.DoesNotExist:
                     print('no refresh token nor customer id found')
-                    return Response('', status=status.HTTP_200_OK)
+                    user_data = {
+                        'refresh_token': 0,
+                        'customer_id': 0
+                    }
+                    return JsonResponse(user_data, safe=False)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         
-# Get info of the campaigns associated with the customer_id from the request
+# Get info of the campaigns associated with the customer_id from the request.
+# API endpoint 'api/get-campaigns/'
 @api_view(['POST'])
 def get_campaigns(request):
     if request.method == 'POST':
         serializer = ReportingSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
+            print('ReportingSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
 
             '''
             Get the refresh token.
@@ -253,13 +304,17 @@ def get_campaigns(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
                 print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
                 print('found a refresh token')
             
@@ -286,13 +341,16 @@ def get_campaigns(request):
 
 
 # Get keyword themes recommendations
+# API endpoint 'api/keywords-recommendations/'
 @api_view(['POST'])
 def get_keyword_themes_recommendations(request):
     if request.method == 'POST':
         serializer = GetKeywordThemesRecommendationsSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            
+            print('GetKeywordThemesRecommendationsSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
             '''
             Get the refresh token.
             If there is no refresh token
@@ -301,13 +359,19 @@ def get_keyword_themes_recommendations(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the keyword text
             keyword_text = serializer['keyword_text'].value
@@ -356,12 +420,16 @@ def get_keyword_themes_recommendations(request):
         return Response(data="bad request")
 
 # Get location recommendations
+# API endpoint 'api/location-recommendations/'
 @api_view(['POST'])
 def get_location_recommendations(request):
     if request.method == 'POST':
         serializer = LocationRecommendationsSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('LocationRecommendationsSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
             '''
             Get the refresh token.
             If there is no refresh token
@@ -370,14 +438,24 @@ def get_location_recommendations(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
+            
             # get the location
             location = serializer['location'].value
 
@@ -390,9 +468,11 @@ def get_location_recommendations(request):
             # call the function to get the recommendations
             get_recommendations = get_geo_location_recommendations(
                 refresh_token, 
+                customer_id,
                 location, 
                 country_code, 
-                language_code)
+                language_code,
+                use_login_id)
 
             response = JsonResponse(get_recommendations, safe=False)
            
@@ -400,31 +480,45 @@ def get_location_recommendations(request):
         return Response(data="bad request")
 
 # Create Google Ads account
+# API endpoint 'api/create-account/'
 @api_view(['POST'])
 def create_google_ads_account(request):
     if request.method == 'POST':
         serializer = GoogleAdsAccountCreationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
+            print('GoogleAdsAccountCreationSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
             '''
-            get the refresh token
-            if there is no refresh token in the data sent via the ui
-            then it means user doesn't have credentials
-            so we can create an account on their behalf
-            using our refresh token
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
             '''
-            # if there is no refresh token, use the App's refresh token
-            if not serializer['refreshToken'].value:
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
-                mytoken = serializer['mytoken'].value
-            
-            # if there is a refresh token, it means an existing user wants
-            # to create a new account and we should let them
-            else: refresh_token = serializer['refreshToken'].value
+                # use_login_id = True
+                print('no refresh token so using the app')
+            else: 
+                refresh_token = user_credential
+                # use_login_id = False
+                print('found a refresh token')
 
             print("refresh_token:")
             print(refresh_token)
+
+            # get the customer_id
+            customer_id = serializer['customer_id'].value
+            customer_id = str(customer_id)
 
             # get the account_name
             account_name = serializer['account_name'].value
@@ -440,7 +534,8 @@ def create_google_ads_account(request):
 
             # call the function to create account
             customer_id = create_client_customer(
-                refresh_token, 
+                refresh_token,
+                customer_id, 
                 account_name, 
                 currency, 
                 time_zone, 
@@ -466,13 +561,16 @@ def create_google_ads_account(request):
         return Response(data="bad request")
 
 # Get budget recommendations
+# API endpoint 'api/get-budget-recommendation/'
 @api_view(['POST'])
 def get_budget(request):
     if request.method == 'POST':
         serializer = GetBudgetRecommendationsSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            
+            print('GetBudgetRecommendationsSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
             '''
             Get the refresh token.
             If there is no refresh token
@@ -481,13 +579,19 @@ def get_budget(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -537,13 +641,16 @@ def get_budget(request):
         return Response(data="bad request")
 
 # Get ad creatives recommendations
+# API endpoint 'api/get-ad-recommendation/'
 @api_view(['POST'])
 def get_ad_creatives(request):
     if request.method == 'POST':
         serializer = GetBudgetRecommendationsSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            
+            print('GetBudgetRecommendationsSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
             '''
             Get the refresh token.
             If there is no refresh token
@@ -552,13 +659,19 @@ def get_ad_creatives(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -610,13 +723,17 @@ def get_ad_creatives(request):
         return Response(data="bad request")
 
 # Create Smart Campaign
+# API endpoint 'api/create-campaign/'
 @api_view(['POST'])
 def create_smart_campaign(request):
     if request.method == 'POST':
         serializer = CreateSmartCampaignSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            
+            print('CreateSmartCampaignSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
             '''
             Get the refresh token.
             If there is no refresh token
@@ -625,13 +742,19 @@ def create_smart_campaign(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -709,7 +832,9 @@ def get_billing(request):
     if request.method == 'POST':
         serializer = ReportingSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('ReportingSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
 
             '''
             Get the refresh token.
@@ -719,12 +844,16 @@ def get_billing(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            
+            if user_credential is None:
+                print('using the app refresh token')
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
             else: 
-                refresh_token = serializer['refreshToken'].value
+                print('using user refresh token...')
+                refresh_token = user_credential
                 use_login_id = False
 
             # get the customer_id
@@ -741,15 +870,18 @@ def get_billing(request):
             response = JsonResponse(get_billing_info, safe=False)
            
             return response
-        return Response(data="bad request")
+        return Response(data="bad request for billing")
 
 # Get campaign settings for the campaign_id from the request
+# API endpoint 'api/get-campaign-settings/'
 @api_view(['POST'])
 def get_sc_settings(request):
     if request.method == 'POST':
         serializer = CampaignSettingsSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('CampaignSettingsSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
 
             '''
             Get the refresh token.
@@ -759,13 +891,19 @@ def get_sc_settings(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -789,12 +927,15 @@ def get_sc_settings(request):
         return Response(data="bad request")
 
 # Enable a Smart Campaign
+# API endpoint 'api/sc-settings/enable/'
 @api_view(['POST'])
 def enable_campaign(request):
     if request.method == 'POST':
         serializer = CampaignSettingsSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('CampaignSettingsSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
 
             '''
             Get the refresh token.
@@ -804,13 +945,19 @@ def enable_campaign(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -834,12 +981,15 @@ def enable_campaign(request):
         return Response(data="bad request")
 
 # Pause a Smart Campaign
+# API endpoint 'api/sc-settings/pause/'
 @api_view(['POST'])
 def pause_campaign(request):
     if request.method == 'POST':
         serializer = CampaignSettingsSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('CampaignSettingsSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
 
             '''
             Get the refresh token.
@@ -849,13 +999,19 @@ def pause_campaign(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -879,12 +1035,15 @@ def pause_campaign(request):
         return Response(data="bad request")
 
 # Delete a Smart Campaign
+# API endpoint 'api/sc-settings/delete/'
 @api_view(['POST'])
 def delete_campaign(request):
     if request.method == 'POST':
         serializer = CampaignSettingsSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('CampaignSettingsSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
 
             '''
             Get the refresh token.
@@ -894,13 +1053,19 @@ def delete_campaign(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -924,12 +1089,15 @@ def delete_campaign(request):
         return Response(data="bad request")
 
 # Edit name of Smart Campaign
+# API endpoint 'api/sc-settings/edit-name/'
 @api_view(['POST'])
 def edit_campaign_name(request):
     if request.method == 'POST':
         serializer = CampaignNameSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('CampaignSettingsSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
 
             '''
             Get the refresh token.
@@ -939,13 +1107,19 @@ def edit_campaign_name(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -973,13 +1147,16 @@ def edit_campaign_name(request):
             return response
         return Response(data="bad request")
 
-# Edit budget of Smart Campaign
+# Edit campaign budget.
+# API endpoint 'api/sc-settings/edit-budget/'
 @api_view(['POST'])
 def edit_campaign_budget(request):
     if request.method == 'POST':
         serializer = EditCampaignBudgetSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('EditCampaignBudgetSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
 
             '''
             Get the refresh token.
@@ -989,13 +1166,19 @@ def edit_campaign_budget(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -1029,12 +1212,15 @@ def edit_campaign_budget(request):
         return Response(data="bad request")
 
 # Get search terms report for smart campaign
+# API endpoint 'api/get-search-terms-report/'
 @api_view(['POST'])
 def get_search_terms_report(request):
     if request.method == 'POST':
         serializer = SearchTermsReportSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('SearchTermsReportSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
 
             '''
             Get the refresh token.
@@ -1044,13 +1230,19 @@ def get_search_terms_report(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -1079,12 +1271,15 @@ def get_search_terms_report(request):
         return Response(data="bad request")
 
 # Edit ad creative of Smart Campaign
+# API endpoint 'api/sc-settings/edit-ad-creative/'
 @api_view(['POST'])
 def edit_ad_creative(request):
     if request.method == 'POST':
         serializer = EditAdCreativeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('EditAdCreativeSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
 
             '''
             Get the refresh token.
@@ -1094,13 +1289,19 @@ def edit_ad_creative(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -1138,12 +1339,16 @@ def edit_ad_creative(request):
         return Response(data="bad request")
 
 # Edit keyword themes of smart campaign
+# API endpoint 'api/sc-settings/edit-keywords/'
 @api_view(['POST'])
 def edit_keywords(request):
     if request.method == 'POST':
         serializer = EditKeywordThemesSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('EditKeywordThemesSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
             '''
             Get the refresh token.
             If there is no refresh token
@@ -1152,13 +1357,19 @@ def edit_keywords(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -1190,17 +1401,33 @@ def edit_keywords(request):
         return Response(data="bad request")
 
 # Get Business Information from Google My Business
+# API endpoint 'api/get-business-info/'
 @api_view(['POST'])
 def get_business_info(request):
     if request.method == 'POST':
-        serializer = RefreshTokenSerializer(data=request.data)
+        serializer = MyTokenSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
             # get the refresh token
-            if serializer['refreshToken'].value != '':
-                refresh_token = serializer['refreshToken'].value
-                print("refresh_token:")
-                print(refresh_token)
+            print('MyTokenSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
+                # In this case we do not want to use the app refresh token
+                # because if we do we will get the business info of our
+                # Manager account. This behavior is different than all other functions.
+                # GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                # refresh_token = GOOGLE_REFRESH_TOKEN
+                # use_login_id = True
+                # print('no refresh token so using the app')
+                print('no refresh token so do not get data')
+            else: 
+                refresh_token = user_credential
+                # use_login_id = False
+                print('found a refresh token')
 
                 # call the function to get the business info
                 gmb_info = business_profile(refresh_token)
@@ -1208,19 +1435,20 @@ def get_business_info(request):
                 response = JsonResponse(gmb_info, safe=False)
             
                 return response
-            # if no refresh token, don't try to get GMB info
-            else:
-                return Response(data="")
    
         return Response(data="bad request")
 
 # Edit geo target locations of smart campaign
+# API endpoint 'api/sc-settings/edit-geo-targets/'
 @api_view(['POST'])
 def edit_geo_target(request):
     if request.method == 'POST':
         serializer = EditGeoTargetsSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('EditGeoTargetsSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
             '''
             Get the refresh token.
             If there is no refresh token
@@ -1229,13 +1457,19 @@ def edit_geo_target(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -1282,12 +1516,16 @@ def edit_geo_target(request):
         return Response(data="bad request")
 
 # Edit smart campaign ad schedule
+# API endpoint 'api/sc-settings/edit-ad-schedule/'
 @api_view(['POST'])
 def edit_ad_schedule_campaign(request):
     if request.method == 'POST':
         serializer = EditAdScheduleSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print('EditAdScheduleSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
             '''
             Get the refresh token.
             If there is no refresh token
@@ -1296,13 +1534,19 @@ def edit_ad_schedule_campaign(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -1313,59 +1557,59 @@ def edit_ad_schedule_campaign(request):
             campaign_id = str(campaign_id)
 
             # get the new ad schedules
-            if serializer['mon_start'].value == '':
+            if serializer['mon_start'].value is None:
                 mon_start = -1
             else:
                 mon_start = int(serializer['mon_start'].value)
-            if serializer['mon_end'].value == '':
+            if serializer['mon_end'].value is None:
                 mon_end = -1
             else:
                 mon_end = int(serializer['mon_end'].value)
-            if serializer['tue_start'].value == '':
+            if serializer['tue_start'].value is None:
                 tue_start = -1
             else:
                 tue_start = int(serializer['tue_start'].value)
-            if serializer['tue_end'].value == '':
+            if serializer['tue_end'].value is None:
                 tue_end = -1
             else:
                 tue_end = int(serializer['tue_end'].value)
-            if serializer['wed_start'].value == '':
+            if serializer['wed_start'].value is None:
                 wed_start = -1
             else:
                 wed_start = int(serializer['wed_start'].value)
-            if serializer['wed_end'].value == '':
+            if serializer['wed_end'].value is None:
                 wed_end = -1
             else:
                 wed_end = int(serializer['wed_end'].value)
-            if serializer['thu_start'].value == '':
+            if serializer['thu_start'].value is None:
                 thu_start = -1
             else:
                 thu_start = int(serializer['thu_start'].value)
-            if serializer['thu_end'].value == '':
+            if serializer['thu_end'].value is None:
                 thu_end = -1
             else:
                 thu_end = int(serializer['thu_end'].value)
-            if serializer['fri_start'].value == '':
+            if serializer['fri_start'].value is None:
                 fri_start = -1
             else:
                 fri_start = int(serializer['fri_start'].value)
-            if serializer['fri_end'].value == '':
+            if serializer['fri_end'].value is None:
                 fri_end = -1
             else:
                 fri_end = int(serializer['fri_end'].value)
-            if serializer['sat_start'].value == '':
+            if serializer['sat_start'].value is None:
                 sat_start = -1
             else:
                 sat_start = int(serializer['sat_start'].value)
-            if serializer['sat_end'].value == '':
+            if serializer['sat_end'].value is None:
                 sat_end = -1
             else:
                 sat_end = int(serializer['sat_end'].value)
-            if serializer['sun_start'].value == '':
+            if serializer['sun_start'].value is None:
                 sun_start = -1
             else:
                 sun_start = int(serializer['sun_start'].value)
-            if serializer['sun_end'].value == '':
+            if serializer['sun_end'].value is None:
                 sun_end = -1
             else:
                 sun_end = int(serializer['sun_end'].value)
@@ -1392,9 +1636,32 @@ def link_accounts(request):
     if request.method == 'POST':
         serializer = LinkToManagerSerializer(data=request.data)
         if serializer.is_valid():
+            print('LinkToManagerSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
+            '''
+            Get the refresh token.
+            If there is no refresh token
+            it means it is a user that we created the Ads account for them.
+            Therefore, use login_customer_id in the headers of API calls,
+            and use the app's refresh token.
+            If there is a refresh token, use it.
+            '''
+            user_credential = get_refresh_token(mytoken)
+            
+            if user_credential is None:
+                print('using the app refresh token')
+                GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
+                refresh_token = GOOGLE_REFRESH_TOKEN
+                use_login_id = True
+            else: 
+                print('using user refresh token...')
+                refresh_token = user_credential
+                use_login_id = False
             # serializer.save()
             # get the refresh token
-            refresh_token = serializer['refreshToken'].value
+            # refresh_token = serializer['refreshToken'].value
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -1411,11 +1678,16 @@ def link_accounts(request):
         return Response(data="bad request")
 
 # Get negative keyword themes for smart campaign
+# API endpoint 'api/get-negative-keywords/'
 @api_view(['POST'])
 def get_negative_keyword_themes(request):
     if request.method == 'POST':
         serializer = CampaignSettingsSerializer(data=request.data)
         if serializer.is_valid():
+            print('CampaignSettingsSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
             '''
             Get the refresh token.
             If there is no refresh token
@@ -1424,13 +1696,19 @@ def get_negative_keyword_themes(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value
@@ -1454,11 +1732,16 @@ def get_negative_keyword_themes(request):
         return Response(data="bad request")
 
 # Edit negative keyword themes for smart campaign
+# API endpoint 'api/edit-negative-keywords/'
 @api_view(['POST'])
 def edit_negative_keyword_themes(request):
     if request.method == 'POST':
         serializer = EditKeywordThemesSerializer(data=request.data)
         if serializer.is_valid():
+            print('EditKeywordThemesSerializer is valid')
+            # get the token associated with that user
+            mytoken = serializer['mytoken'].value
+
             '''
             Get the refresh token.
             If there is no refresh token
@@ -1467,13 +1750,19 @@ def edit_negative_keyword_themes(request):
             and use the app's refresh token.
             If there is a refresh token, use it.
             '''
-            if serializer['refreshToken'].value == '':
+            user_credential = get_refresh_token(mytoken)
+            print("user_credential:")
+            print(user_credential)
+            
+            if user_credential is None:
                 GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN", None)
                 refresh_token = GOOGLE_REFRESH_TOKEN
                 use_login_id = True
+                print('no refresh token so using the app')
             else: 
-                refresh_token = serializer['refreshToken'].value
+                refresh_token = user_credential
                 use_login_id = False
+                print('found a refresh token')
 
             # get the customer_id
             customer_id = serializer['customer_id'].value

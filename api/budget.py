@@ -231,12 +231,23 @@ def get_budget_recommendation(
         data["low_max_clicks"] = low_budget.metrics.max_daily_clicks
 
         # get currency of the budget recommendations
-        customer_service = client.get_service("CustomerService")
+        ga_service = client.get_service("GoogleAdsService")
         customer_resource_name = str('customers/'+customer_id)
-        customer_data = customer_service.get_customer(resource_name=customer_resource_name)
-        currency_code = customer_data.currency_code
-        data["currency"] = currency_code
-        
+        query = (f'''
+            SELECT 
+                customer.currency_code
+            FROM customer
+            WHERE customer.resource_name = '{customer_resource_name}'
+            '''
+        )
+        stream = ga_service.search_stream(
+            customer_id=customer_id,
+            query=query
+        )
+
+        for batch in stream:
+            for row in batch.results:
+                data["currency"] = row.customer.currency_code
 
         json.dumps(data)
 
