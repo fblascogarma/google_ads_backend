@@ -56,6 +56,7 @@ def list_accounts(refresh_token):
                         customer.currency_code, 
                         customer.descriptive_name, 
                         customer.id, 
+                        customer.status,
                         customer.manager, 
                         customer.resource_name, 
                         customer.time_zone 
@@ -80,56 +81,52 @@ def list_accounts(refresh_token):
                         elif row.customer.manager == 0:
                             data["account_type"] = "Client"
                         # customer_data.append(data)
-                        # data["status"] = row.customer.status  # comes in API v10
-                        # get billing status too
-                        query = """
-                            SELECT
-                                billing_setup.id,
-                                billing_setup.status
-                            FROM billing_setup"""
+                        data["status"] = row.customer.status.name  # comes in API v10
+                # get billing status too
+                query = """
+                    SELECT
+                        billing_setup.id,
+                        billing_setup.status
+                    FROM billing_setup"""
 
-                        response = ga_service.search_stream(customer_id=customer_id, query=query)
+                response = ga_service.search_stream(customer_id=customer_id, query=query)
 
-                        # print("Found the following billing setup results:")
-                        for batch in response:
-                            for row in batch.results:
-                                billing_setup = row.billing_setup
-                                # print(
-                                #     f"Billing setup with ID {billing_setup.id}, "
-                                #     f'status "{billing_setup.status.name}", '
-                                # )
+                # print("Found the following billing setup results:")
+                for batch in response:
+                    for row in batch.results:
+                        billing_setup = row.billing_setup
 
-                        try:
-                            billing_status = billing_setup.status.name
-                        except NameError:
-                            billing_status = "no billing"
+                try:
+                    billing_status = billing_setup.status.name
+                except NameError:
+                    billing_status = "no billing"
 
-                        # possible statuses are: PENDING, APPROVED, CANCELLED, and APPROVED_HELD
-                        # https://developers.google.com/google-ads/api/reference/rpc/v8/BillingSetupStatusEnum.BillingSetupStatus
-                        # print('billing_status:')
-                        # print(billing_status)
-                        data["billing_status"] = billing_status
+                # possible statuses are: PENDING, APPROVED, CANCELLED, and APPROVED_HELD
+                # https://developers.google.com/google-ads/api/reference/rpc/v8/BillingSetupStatusEnum.BillingSetupStatus
+                # print('billing_status:')
+                # print(billing_status)
+                data["billing_status"] = billing_status
 
-                        # check if client is linked to your Manager account
-                        query = """
-                            SELECT
-                                customer_manager_link.manager_customer, 
-                                customer_manager_link.resource_name, 
-                                customer_manager_link.status
-                            FROM customer_manager_link"""
+                # check if client is linked to your Manager account
+                query = """
+                    SELECT
+                        customer_manager_link.manager_customer, 
+                        customer_manager_link.resource_name, 
+                        customer_manager_link.status
+                    FROM customer_manager_link"""
 
-                        response = ga_service.search_stream(customer_id=customer_id, query=query)
-                        for batch in response:
-                            for row in batch.results:
-                                print("row.customer_manager_link.status:")
-                                print(row.customer_manager_link.status.name)
-                                if row.customer_manager_link.status.name == "ACTIVE":
-                                    manager_linked_id = row.customer_manager_link.manager_customer.split('/')[1]
-                                    data["manager_account_linked"] = manager_linked_id
-                                else:
-                                    data["manager_account_linked"] = "0"
-                        
-                        customer_data.append(data)
+                response = ga_service.search_stream(customer_id=customer_id, query=query)
+                for batch in response:
+                    for row in batch.results:
+                        print("row.customer_manager_link.status:")
+                        print(row.customer_manager_link.status.name)
+                        if row.customer_manager_link.status.name == "ACTIVE":
+                            manager_linked_id = row.customer_manager_link.manager_customer.split('/')[1]
+                            data["manager_account_linked"] = manager_linked_id
+                        else:
+                            data["manager_account_linked"] = "0"
+                
+                customer_data.append(data)
             
             # the exception below is in case the user has a test account, 
             # which would throw an error

@@ -74,19 +74,6 @@ def get_geo_location_recommendations(
         # get suggestions of locations based on the user's input
         results = gtc_service.suggest_geo_target_constants(gtc_request)
 
-        # for suggestion in results.geo_target_constant_suggestions:
-        #     geo_target_constant = suggestion.geo_target_constant
-        #     print(
-        #         f"{geo_target_constant.resource_name} "
-        #         f"({geo_target_constant.name}, "
-        #         f"{geo_target_constant.country_code}, "
-        #         f"{geo_target_constant.target_type}, "
-        #         f"{geo_target_constant.status.name}) "
-        #         f"is found in locale ({suggestion.locale}) "
-        #         f"with reach ({suggestion.reach}) "
-        #         f"from search term ({suggestion.search_term})."
-        #     )
-
         # store the recommendations
         location_recommendations = []
         for suggestion in results.geo_target_constant_suggestions:
