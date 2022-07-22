@@ -160,9 +160,7 @@ def callback(request):
 
             # send to the frontend that user has a refresh token
             return JsonResponse(user_data, safe=False)
-            # # send the refresh token as the response
-            # response = HttpResponse(refresh_token)
-            # return response
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # Get list of accounts associated with the Google account the user used to authenticate.
