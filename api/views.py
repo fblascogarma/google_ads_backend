@@ -153,9 +153,16 @@ def callback(request):
             if not serializer_credentials.is_valid():
                 print('serializer is not valid and refresh token was not saved')
 
-            # send the refresh token as the response
-            response = HttpResponse(refresh_token)
-            return response
+            user_data = {
+                    'refresh_token': 1,
+                    'customer_id': 0
+                }
+
+            # send to the frontend that user has a refresh token
+            return JsonResponse(user_data, safe=False)
+            # # send the refresh token as the response
+            # response = HttpResponse(refresh_token)
+            # return response
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # Get list of accounts associated with the Google account the user used to authenticate.
