@@ -10,7 +10,9 @@ Companies can use my open-source app and the [technical guide](https://docs.goog
 
 They can learn about what they can do with Google Ads API and **get a clear idea of how a finished solution could look like**.  
 
-If this project helped you, please **give it a star**, and if you have suggestions, they are more than welcome. 
+If this project helped you, please **give it a star**.
+
+Give us your feedback [here](https://forms.gle/khdLQ7gDrU8i4p2j9) please. Any feature requests, bugs, satisfaction with the project, or others.
 
 Thank you!
 
