@@ -104,7 +104,7 @@ Sign into your [Google Cloud Platform](https://cloud.google.com/) console, and g
 1. In Application type put ‘Web application’. As stated in the value proposition section, we are not going to create a service account because that is not usually the case for our partners.
 1. In the Authorized JavaScript origins section and Authorized redirect URIs section, put "http://localhost:8080" in both. This is important because the OAuth flow will redirect you to that URI, and if you don’t include it in the project, you will get an error.
 1. Download the json file with your credentials (your Client ID, Client Secret, redirect uris, etc.) and save it anywhere in your project.
-1. Enable the APIs you are going to use (Content API, Site Verification API, and Google Ads API) by navigating to APIs & Services > Dashboard, in your GCP project and click on ‘ENABLE APIS AND SERVICES’. Use the search bar to find them faster. The OAuth credentials will be the same as the ones you already created for the project.
+1. Enable the APIs you are going to use (Google Ads API, My Business Business Information API, and My Business Account Management API) by navigating to APIs & Services > Dashboard, in your GCP project and click on ‘ENABLE APIS AND SERVICES’. Use the search bar to find them faster. The OAuth credentials will be the same as the ones you already created for the project.
 
 When you have your OAuth credentials, download the JSON file and save it to your backend folder. That will be the file that stores your client credentials that authenticates your app to Google’s services. 
 That file contains information to link your app with your GCP project. 
