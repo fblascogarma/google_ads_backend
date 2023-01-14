@@ -162,12 +162,13 @@ def get_keyword_themes_suggestions(
         recommendations = []
         for i in keyword_theme_constants:
 
-            display_name = i.display_name
+            kw_theme_constant = i.keyword_theme_constant
+            display_name = kw_theme_constant.display_name
             # send only the display_name to the frontend
             # and in title case (fist letter of every word in upper case)
             display_name = display_name.title()
             recommendations.append(display_name)
-            resource_name = i.resource_name
+            resource_name = kw_theme_constant.resource_name
             # save display_name and resource_name in model
             data_model = {}
             data_model["resource_name"] = resource_name
@@ -181,7 +182,6 @@ def get_keyword_themes_suggestions(
                 except KeywordThemesRecommendations.DoesNotExist:
                     serializer.save()
 
-        # json.dumps(recommendations)
         '''
         Here ends the new service to get keyword theme recommendations
         '''
