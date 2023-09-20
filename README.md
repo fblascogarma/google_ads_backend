@@ -18,7 +18,7 @@ Testimonial from a company who used this project:
 >"We looked at your app in great detail and learnt a lot from it. 
 Your app worked like a charm and gave us a good sense of various components involved. 
 The [document](https://docs.google.com/document/d/10WyzDUNZTVHhenWgCopf3YyaRDsyoavc7aHuOAMJF6Y/edit?usp=sharing) you provided was also very helpful.
-Thank you fo putting this together."
+Thank you for putting this together."
 
 # Assumptions & Prerequisites
 

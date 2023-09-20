@@ -72,6 +72,7 @@ def campaign_info(
                 campaign.serving_status, 
                 campaign.start_date, 
                 campaign.advertising_channel_sub_type, 
+                campaign.advertising_channel_type, 
                 metrics.average_cpc, 
                 metrics.average_cpm, 
                 metrics.clicks, 
@@ -91,6 +92,7 @@ def campaign_info(
                 'campaign.serving_status, '
                 'campaign.start_date, '
                 'campaign.advertising_channel_sub_type, '
+                'campaign.advertising_channel_type, '
                 'metrics.average_cpc, '
                 'metrics.average_cpm, '
                 'metrics.clicks, '
@@ -148,9 +150,37 @@ def campaign_info(
 
                 # get campaign type name
                 # see this link for reference 
-                # https://developers.google.com/google-ads/api/reference/rpc/v8/AdvertisingChannelSubTypeEnum.AdvertisingChannelSubType
+                # https://developers.google.com/google-ads/api/reference/rpc/v14/AdvertisingChannelSubTypeEnum.AdvertisingChannelSubType
+                # https://developers.google.com/google-ads/api/reference/rpc/v14/AdvertisingChannelTypeEnum.AdvertisingChannelType
                 if row.campaign.advertising_channel_sub_type == 0:
-                    campaign_type = "Unspecified"
+                    if row.campaign.advertising_channel_type == 0:
+                        campaign_type = "Unspecified"
+                    elif row.campaign.advertising_channel_type == 1:
+                        campaign_type = "Unknown"
+                    elif row.campaign.advertising_channel_type == 2:
+                        campaign_type = "Search"
+                    elif row.campaign.advertising_channel_type == 3:
+                        campaign_type = "Display"
+                    elif row.campaign.advertising_channel_type == 4:
+                        campaign_type = "Shopping"
+                    elif row.campaign.advertising_channel_type == 5:
+                        campaign_type = "Hotel"
+                    elif row.campaign.advertising_channel_type == 6:
+                        campaign_type = "Video"
+                    elif row.campaign.advertising_channel_type == 7:
+                        campaign_type = "App Campaigns"
+                    elif row.campaign.advertising_channel_type == 8:
+                        campaign_type = "Local Ads"
+                    elif row.campaign.advertising_channel_type == 9:
+                        campaign_type = "Smart"
+                    elif row.campaign.advertising_channel_type == 10:
+                        campaign_type = "Performance Max"
+                    elif row.campaign.advertising_channel_type == 11:
+                        campaign_type = "Local Services"
+                    elif row.campaign.advertising_channel_type == 12:
+                        campaign_type = "Discovery"
+                    elif row.campaign.advertising_channel_type == 13:
+                        campaign_type = "Travel"
                 elif row.campaign.advertising_channel_sub_type == 1:
                     campaign_type = "Unknown"
                 elif row.campaign.advertising_channel_sub_type == 2:
